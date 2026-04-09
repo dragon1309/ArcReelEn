@@ -42,6 +42,7 @@ describe("useProjectAssetSync", () => {
     });
     const getProjectSpy = vi.spyOn(API, "getProject").mockResolvedValue({
       project: {
+        language: "en",
         title: "Demo",
         content_mode: "narration",
         style: "Anime",
@@ -61,6 +62,7 @@ describe("useProjectAssetSync", () => {
   it("refreshes the current project exactly once when a tracked task becomes succeeded", async () => {
     vi.spyOn(API, "getProject").mockResolvedValue({
       project: {
+        language: "en",
         title: "Demo",
         content_mode: "narration",
         style: "Anime",

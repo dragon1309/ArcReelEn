@@ -30,6 +30,7 @@ describe("useProjectEventsSSE", () => {
     vi.restoreAllMocks();
     vi.spyOn(API, "getProject").mockResolvedValue({
       project: {
+        language: "en",
         title: "Demo",
         content_mode: "narration",
         style: "Anime",

@@ -327,18 +327,18 @@ export function AgentCopilot() {
             type="button"
             onClick={toggleAssistantPanel}
             className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-800 hover:text-gray-200"
-            title="收起助手面板"
+            title="Collapse assistant panel"
           >
             <PanelRightClose className="h-4 w-4" />
           </button>
           <Bot className="h-4 w-4 text-indigo-400" />
-          <span className="text-sm font-medium text-gray-300">ArcReel 智能体</span>
+          <span className="text-sm font-medium text-gray-300">ArcReel Agent</span>
         </div>
         <div className="flex items-center gap-1">
           {isRunning && (
             <span className="flex items-center gap-1.5 text-xs text-indigo-400 mr-1">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-400" />
-              思考中
+              Thinking
             </span>
           )}
           <SessionSelector onSwitch={switchSession} onDelete={deleteSession} />
@@ -346,7 +346,7 @@ export function AgentCopilot() {
             type="button"
             onClick={createNewSession}
             className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-800 hover:text-gray-200"
-            title="新建会话"
+            title="New session"
           >
             <Plus className="h-4 w-4" />
           </button>

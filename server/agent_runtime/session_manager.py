@@ -316,17 +316,17 @@ class SessionManager:
         self._load_config()
 
     _PERSONA_PROMPT = """\
-## 身份
+## Identity
 
-你是 ArcReel 智能体，一个专业的 AI 视频内容创作助手。你的职责是将小说转化为可发布的短视频内容。
+You are the ArcReel Agent, a professional AI video-creation assistant. Your job is to turn novels into publishable short-form video content.
 
-## 行为准则
+## Behavioral Guidelines
 
-- 主动引导用户完成视频创作工作流，而不仅仅被动回答问题
-- 遇到不确定的创作决策时，向用户提出选项并给出建议，而不是自行决定
-- 涉及多步骤任务时，使用 TodoWrite 跟踪进度并向用户汇报
-- 你不能创建或编辑代码文件（.py/.js/.sh 等），Write/Edit 仅限 .json/.md/.txt
-- 你是用户的视频制作搭档，专业、友善、高效"""
+- Proactively guide the user through the video-production workflow instead of only answering questions reactively
+- When a creative decision is uncertain, present clear options with a recommendation instead of deciding silently
+- For multi-step tasks, use TodoWrite to track progress and keep the user informed
+- You may not create or edit code files (`.py`, `.js`, `.sh`, etc.); `Write` and `Edit` are limited to `.json`, `.md`, and `.txt`
+- You are the user's video-production partner: professional, friendly, and efficient"""
 
     def _build_append_prompt(self, project_name: str) -> str:
         """Build the append portion for SystemPromptPreset.
@@ -366,30 +366,32 @@ class SessionManager:
             return ""
 
         parts = [
-            "## 当前项目上下文",
+            "## Current Project Context",
             "",
         ]
 
-        # TODO: 当前定位是自部署服务，这里直接拼接项目元数据以保持实现简单。
-        # TODO: 若后续演进为 SaaS / 多租户服务，需要把 title/style/overview 等用户输入
-        # TODO: 按“非指令上下文”做边界化或转义，降低 prompt injection 风险。
-        parts.append(f"- 项目标识：{project_name}")
+        # TODO: The current product is self-hosted, so we inline project
+        # metadata directly to keep the implementation simple.
+        # TODO: If this evolves into SaaS / multi-tenant hosting, user-authored
+        # fields like title/style/overview should be boundary-marked or escaped
+        # as non-instructional context to reduce prompt-injection risk.
+        parts.append(f"- Project ID: {project_name}")
         if title := config.get("title"):
-            parts.append(f"- 项目标题：{title}")
+            parts.append(f"- Project Title: {title}")
         if mode := config.get("content_mode"):
-            parts.append(f"- 内容模式：{mode}")
+            parts.append(f"- Content Mode: {mode}")
         if style := config.get("style"):
-            parts.append(f"- 视觉风格：{style}")
+            parts.append(f"- Visual Style: {style}")
         if style_desc := config.get("style_description"):
-            parts.append(f"- 风格描述：{style_desc}")
-        parts.append(f"- 项目目录（即当前工作目录 cwd）：{project_cwd}")
+            parts.append(f"- Style Description: {style_desc}")
+        parts.append(f"- Project directory (the current working directory / cwd): {project_cwd}")
         parts.append(
-            "- Read/Edit/Write 等工具的 file_path 参数必须使用绝对路径，不要使用相对路径，也不要把项目标题当成目录名。"
+            "- `Read` / `Edit` / `Write` tool calls must use absolute `file_path` values. Do not use relative paths and do not treat the project title as a directory name."
         )
         parts.append(
-            "- Bash 调用 skill 脚本时必须使用相对路径（如 `python .claude/skills/.../script.py`），不要转换为绝对路径。"
+            "- When Bash runs a skill script, use a relative path (for example `python .claude/skills/.../script.py`) instead of converting it to an absolute path."
         )
-        parts.append("- Bash 命令必须写在单行，禁止使用 `\\` 换行，JSON 参数使用紧凑格式。")
+        parts.append("- Bash commands must stay on one line. Do not use `\\` line continuations, and keep JSON arguments compact.")
 
         self._append_overview_section(parts, config.get("overview", {}))
 
@@ -401,15 +403,15 @@ class SessionManager:
         if not isinstance(overview, dict) or not overview:
             return
         parts.append("")
-        parts.append("### 项目概述")
+        parts.append("### Project Overview")
         if synopsis := overview.get("synopsis"):
             parts.append(synopsis)
         if genre := overview.get("genre"):
-            parts.append(f"- 题材：{genre}")
+            parts.append(f"- Genre: {genre}")
         if theme := overview.get("theme"):
-            parts.append(f"- 主题：{theme}")
+            parts.append(f"- Theme: {theme}")
         if world := overview.get("world_setting"):
-            parts.append(f"- 世界观：{world}")
+            parts.append(f"- World Setting: {world}")
 
     def _build_options(
         self,

@@ -156,6 +156,7 @@ describe("stores", () => {
     expect(useProjectsStore.getState().projectsLoading).toBe(true);
 
     projects.setCurrentProject("demo", {
+      language: "en",
       title: "Demo",
       content_mode: "narration",
       style: "Anime",

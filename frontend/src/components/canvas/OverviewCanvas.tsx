@@ -425,7 +425,7 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
               <h3 className="text-sm font-semibold text-gray-300">剧集</h3>
               {(projectData.episodes?.length ?? 0) === 0 ? (
                 <p className="text-sm text-gray-500">
-                  暂无剧集。使用 AI 助手生成剧本。
+                  No episodes yet. Use the AI assistant to generate a script.
                 </p>
               ) : (
                 (projectData.episodes ?? []).map((ep) => {

@@ -596,7 +596,7 @@ function MediaColumn({
             onRestore={onRestoreStoryboard}
           />
         </div>
-        <PreviewableImageFrame src={storyboardUrl} alt={`${segmentId} 分镜图`}>
+        <PreviewableImageFrame src={storyboardUrl} alt={`${segmentId} storyboard image`}>
           <AspectFrame ratio={normalizedRatio}>
             <ImageFlipReveal
               src={storyboardUrl}

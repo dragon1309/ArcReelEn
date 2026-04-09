@@ -79,6 +79,7 @@ describe("GlobalHeader", () => {
     useProjectsStore.setState({
       currentProjectName: "halou-92d19a04",
       currentProjectData: {
+        language: "en",
         title: "哈喽项目",
         content_mode: "narration",
         style: "Anime",
@@ -120,8 +121,8 @@ describe("GlobalHeader", () => {
 
     renderHeader();
 
-    expect(screen.getByTitle("会话通知: 1 条")).toBeInTheDocument();
-    screen.getByRole("button", { name: "打开通知中心" }).click();
+    expect(screen.getByTitle("Session notifications: 1")).toBeInTheDocument();
+    screen.getByRole("button", { name: "Open notification center" }).click();
     expect(await screen.findByTestId("notifications-drawer")).toBeInTheDocument();
   });
 
@@ -147,6 +148,7 @@ describe("GlobalHeader", () => {
     useProjectsStore.setState({
       currentProjectName: "demo",
       currentProjectData: {
+        language: "en",
         title: "导出项目",
         content_mode: "narration",
         style: "Anime",
@@ -158,7 +160,7 @@ describe("GlobalHeader", () => {
 
     renderHeader();
     // Click export button to open dialog
-    screen.getByRole("button", { name: "导出当前项目 ZIP" }).click();
+    screen.getByRole("button", { name: "Export current project ZIP" }).click();
 
     // Wait for dialog to appear then click "仅当前版本"
     const scopeBtn = await screen.findByTestId("scope-current");
@@ -168,7 +170,7 @@ describe("GlobalHeader", () => {
       expect(API.requestExportToken).toHaveBeenCalledWith("demo", "current");
     });
     expect(anchorClick).toHaveBeenCalled();
-    expect(useAppStore.getState().toast?.text).toContain("包含 1 条诊断");
+    expect(useAppStore.getState().toast?.text).toContain("with 1 diagnostics");
   });
 
   it("shows an error toast when exporting fails", async () => {
@@ -184,6 +186,7 @@ describe("GlobalHeader", () => {
     useProjectsStore.setState({
       currentProjectName: "demo",
       currentProjectData: {
+        language: "en",
         title: "导出项目",
         content_mode: "narration",
         style: "Anime",
@@ -194,13 +197,13 @@ describe("GlobalHeader", () => {
     });
 
     renderHeader();
-    screen.getByRole("button", { name: "导出当前项目 ZIP" }).click();
+    screen.getByRole("button", { name: "Export current project ZIP" }).click();
 
     const scopeBtn = await screen.findByTestId("scope-full");
     scopeBtn.click();
 
     await waitFor(() => {
-      expect(useAppStore.getState().toast?.text).toContain("导出失败");
+      expect(useAppStore.getState().toast?.text).toContain("Export failed");
     });
   });
 });

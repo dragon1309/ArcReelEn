@@ -212,7 +212,7 @@ export function AgentConfigTab({ visible }: AgentConfigTabProps) {
       savedRef.current = newDraft;
       setDraft(newDraft);
       useConfigStatusStore.getState().refresh();
-      useAppStore.getState().pushToast("ArcReel 智能体配置已保存", "success");
+      useAppStore.getState().pushToast("ArcReel Agent settings saved", "success");
     } catch (err) {
       setSaveError((err as Error).message);
     } finally {
@@ -236,9 +236,9 @@ export function AgentConfigTab({ visible }: AgentConfigTabProps) {
         savedRef.current = nextSavedDraft;
         setDraft(nextSavedDraft);
         useConfigStatusStore.getState().refresh();
-        useAppStore.getState().pushToast(`${label} 已清除`, "success");
+        useAppStore.getState().pushToast(`${label} cleared`, "success");
       } catch (err) {
-        useAppStore.getState().pushToast(`清除失败: ${(err as Error).message}`, "error");
+        useAppStore.getState().pushToast(`Clear failed: ${(err as Error).message}`, "error");
       } finally {
         setClearingField(null);
       }
@@ -252,14 +252,14 @@ export function AgentConfigTab({ visible }: AgentConfigTabProps) {
   if (loadError) {
     return (
       <div className={visible ? "px-6 py-8" : "hidden"}>
-        <div className="text-sm text-rose-400">加载失败: {loadError}</div>
+        <div className="text-sm text-rose-400">Load failed: {loadError}</div>
         <button
           type="button"
           onClick={() => void load()}
           className="mt-3 inline-flex items-center gap-2 rounded-lg border border-gray-700 px-3 py-2 text-sm text-gray-300 hover:border-gray-600 hover:bg-gray-800/50"
         >
           <Loader2 className="h-4 w-4" />
-          重试
+          Retry
         </button>
       </div>
     );
@@ -269,7 +269,7 @@ export function AgentConfigTab({ visible }: AgentConfigTabProps) {
     return (
       <div className={visible ? "flex items-center gap-2 px-6 py-8 text-gray-400" : "hidden"}>
         <Loader2 className="h-4 w-4 animate-spin text-indigo-400" />
-        加载中…
+        Loading...
       </div>
     );
   }
@@ -286,16 +286,16 @@ export function AgentConfigTab({ visible }: AgentConfigTabProps) {
               <ClaudeColor size={24} />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-100">ArcReel 智能体</h2>
+              <h2 className="text-lg font-semibold text-gray-100">ArcReel Agent</h2>
               <p className="text-sm text-gray-500">
-                基于 Claude Agent SDK，驱动对话式 AI 助手与自动化工作流
+                Powered by the Claude Agent SDK for conversational assistance and automated workflows
               </p>
             </div>
           </div>
           <div className="mt-3 flex items-start gap-2 rounded-lg border border-gray-800/60 bg-gray-900/30 px-3 py-2">
             <Terminal className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gray-500" />
             <p className="text-xs text-gray-500">
-              配置项兼容 Claude Code 环境变量命名，可使用兼容 Claude Code 的 Coding Plan API。
+              These settings follow Claude Code environment naming and work with Claude Code-compatible Coding Plan APIs.
             </p>
           </div>
         </div>
@@ -305,8 +305,8 @@ export function AgentConfigTab({ visible }: AgentConfigTabProps) {
         {/* ----------------------------------------------------------------- */}
         <div>
           <SectionHeading
-            title="API 凭证"
-            description="Anthropic API 密钥是智能体运行的必要条件"
+            title="API Credentials"
+            description="An Anthropic API key is required for the agent to run"
           />
 
           {/* API Key card */}

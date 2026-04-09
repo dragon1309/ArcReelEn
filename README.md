@@ -101,10 +101,31 @@ docker compose up -d
 
 首次启动后，使用默认账号登录（用户名 `admin`，密码在 `.env` 中通过 `AUTH_PASSWORD` 设置；未设置则首次启动时自动生成并回写到 `.env`），前往 **设置页**（`/settings`）完成配置：
 
-1. **ArcReel 智能体** — 配置 Anthropic API Key（驱动 AI 助手），支持自定义 Base URL 和模型
+1. **ArcReel Agent** — Configure the Anthropic API key that powers the AI assistant, with optional custom Base URL and model settings
 2. **AI 生图/生视频** — 配置至少一个供应商的 API Key（Gemini / 火山方舟 / Grok / OpenAI），或添加自定义供应商
 
 > 📖 详细步骤请参考 [完整入门教程](docs/getting-started.md)
+
+## Project Language Migration
+
+ArcReel now uses an English-only project contract. After upgrading, runtime APIs require `project.json` to contain `"language": "en"` and use English-only `scene_type` values (`story` / `establishing`).
+
+Before opening legacy Chinese-first projects in the upgraded app, run the migration command from the repository root:
+
+```bash
+uv run python -m scripts.migrate_project_language \
+  --projects-root ./projects \
+  --target-lang en \
+  --include-source \
+  --write
+```
+
+Notes:
+
+- The migration rewrites project metadata, scripts, drafts, and optional `source/*.txt` / `source/*.md` files in place.
+- Technical identifiers such as project directory names, asset paths, IDs, JSON keys, provider/model IDs, and resource filenames are preserved.
+- A backup snapshot is created automatically before each project is rewritten.
+- Unmigrated projects will fail fast at runtime until this command has been completed successfully.
 
 ## 功能特性
 

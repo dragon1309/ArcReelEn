@@ -114,6 +114,7 @@ describe("ProjectsPage", () => {
       success: true,
       project_name: "imported-demo",
       project: {
+        language: "en",
         title: "Imported Demo",
         content_mode: "narration",
         style: "Anime",
@@ -228,6 +229,7 @@ describe("ProjectsPage", () => {
         success: true,
         project_name: "demo-renamed",
         project: {
+          language: "en",
           title: "Renamed Demo",
           content_mode: "narration",
           style: "Anime",

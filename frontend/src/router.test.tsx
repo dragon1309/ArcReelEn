@@ -62,6 +62,7 @@ describe("AppRoutes", () => {
   it("loads project workspace and resets assistant state", async () => {
     vi.spyOn(API, "getProject").mockResolvedValue({
       project: {
+        language: "en",
         title: "Demo Project",
         content_mode: "narration",
         style: "Anime",

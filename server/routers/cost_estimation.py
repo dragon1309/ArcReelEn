@@ -32,6 +32,8 @@ async def get_cost_estimate(project_name: str, _user: CurrentUser):
             project_data = pm.load_project(project_name)
         except FileNotFoundError:
             raise HTTPException(status_code=404, detail=f"项目 '{project_name}' 不存在")
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc))
 
         # 加载所有剧本
         scripts: dict[str, dict] = {}

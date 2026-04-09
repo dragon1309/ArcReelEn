@@ -76,6 +76,7 @@ export interface EpisodeMeta {
 }
 
 export interface ProjectData {
+  language: "en";
   title: string;
   content_mode: "narration" | "drama";
   style: string;

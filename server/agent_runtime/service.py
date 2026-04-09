@@ -797,13 +797,13 @@ class AssistantService:
 
     # Display metadata for user-facing skills (label + Lucide icon name)
     _SKILL_DISPLAY_META: dict[str, dict[str, str]] = {
-        "manga-workflow": {"label": "视频工作流", "icon": "clapperboard"},
-        "generate-script": {"label": "生成剧本", "icon": "scroll-text"},
-        "generate-storyboard": {"label": "生成分镜图", "icon": "layout-grid"},
-        "generate-video": {"label": "生成视频", "icon": "film"},
-        "generate-characters": {"label": "生成角色图", "icon": "users"},
-        "generate-clues": {"label": "生成线索图", "icon": "search"},
-        "compose-video": {"label": "合成视频", "icon": "scissors"},
+        "manga-workflow": {"label": "Video Workflow", "icon": "clapperboard"},
+        "generate-script": {"label": "Generate Script", "icon": "scroll-text"},
+        "generate-storyboard": {"label": "Generate Storyboard", "icon": "layout-grid"},
+        "generate-video": {"label": "Generate Video", "icon": "film"},
+        "generate-characters": {"label": "Generate Characters", "icon": "users"},
+        "generate-clues": {"label": "Generate Clues", "icon": "search"},
+        "compose-video": {"label": "Compose Video", "icon": "scissors"},
     }
 
     def list_available_skills(self, project_name: str | None = None) -> list[dict[str, str]]:

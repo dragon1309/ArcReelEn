@@ -1,8 +1,4 @@
-"""
-项目文件管理器
-
-管理视频项目的目录结构、分镜剧本读写、状态追踪。
-"""
+"""Project file manager and metadata utilities."""
 
 import fcntl
 import json
@@ -31,12 +27,12 @@ PROJECT_SLUG_SANITIZER = re.compile(r"[^a-zA-Z0-9]+")
 
 
 class ProjectOverview(BaseModel):
-    """项目概述数据模型，用于 Gemini Structured Outputs"""
+    """Project overview schema for structured outputs."""
 
-    synopsis: str = Field(description="故事梗概，200-300字，概括主线剧情")
-    genre: str = Field(description="题材类型，如：古装宫斗、现代悬疑、玄幻修仙")
-    theme: str = Field(description="核心主题，如：复仇与救赎、成长与蜕变")
-    world_setting: str = Field(description="时代背景和世界观设定，100-200字")
+    synopsis: str = Field(description="Story synopsis, roughly 200-300 words summarizing the main plot")
+    genre: str = Field(description="Genre label")
+    theme: str = Field(description="Core theme")
+    world_setting: str = Field(description="World setting and background")
 
 
 class ProjectManager:
@@ -511,7 +507,7 @@ class ProjectManager:
             "scene_id": scene_id,
             "episode": episode,
             "title": "",
-            "scene_type": "剧情",
+            "scene_type": "story",
             "duration_seconds": duration_seconds,
             "segment_break": False,
             "characters_in_scene": [],
@@ -576,7 +572,7 @@ class ProjectManager:
         top_level_defaults = {
             "episode": episode,
             "title": "",
-            "scene_type": "剧情",
+            "scene_type": "story",
             "segment_break": False,
             "characters_in_scene": [],
             "clues_in_scene": [],
@@ -877,15 +873,9 @@ class ProjectManager:
         except FileNotFoundError:
             return False
 
-    def load_project(self, project_name: str) -> dict:
+    def load_project_raw(self, project_name: str) -> dict:
         """
-        加载项目元数据
-
-        Args:
-            project_name: 项目名称
-
-        Returns:
-            项目元数据字典
+        Load project metadata without enforcing the language cutover.
         """
         project_file = self._get_project_file_path(project_name)
 
@@ -894,6 +884,16 @@ class ProjectManager:
 
         with open(project_file, encoding="utf-8") as f:
             return json.load(f)
+
+    def load_project(self, project_name: str) -> dict:
+        """Load project metadata and enforce the English-only language contract."""
+        project = self.load_project_raw(project_name)
+        language = project.get("language")
+        if language != "en":
+            raise ValueError(
+                f"Project '{project_name}' must be migrated before use. Expected project.json language 'en', got {language!r}."
+            )
+        return project
 
     @contextmanager
     def _project_lock(self, project_name: str):
@@ -993,6 +993,7 @@ class ProjectManager:
     @staticmethod
     def _touch_metadata(project: dict) -> None:
         now = datetime.now().isoformat()
+        project.setdefault("language", "en")
         if "metadata" not in project:
             project["metadata"] = {"created_at": now, "updated_at": now}
         else:
@@ -1025,6 +1026,7 @@ class ProjectManager:
         project_title = str(title).strip() if title is not None else ""
 
         project = {
+            "language": "en",
             "title": project_title or project_name,
             "content_mode": content_mode,
             "aspect_ratio": aspect_ratio,
@@ -1490,7 +1492,7 @@ class ProjectManager:
 
     async def generate_overview(self, project_name: str) -> dict:
         """
-        使用 Gemini API 异步生成项目概述
+        Generate a project overview with the configured text backend.
 
         Args:
             project_name: 项目名称
@@ -1501,16 +1503,17 @@ class ProjectManager:
         from .text_backends.base import TextGenerationRequest, TextTaskType
         from .text_generator import TextGenerator
 
-        # 读取源文件内容
         source_content = self._read_source_files(project_name)
         if not source_content:
             raise ValueError("source 目录为空，无法生成概述")
 
-        # 创建 TextGenerator（自动追踪用量）
         generator = await TextGenerator.create(TextTaskType.OVERVIEW, project_name)
 
-        # 调用 TextGenerator（Structured Outputs）
-        prompt = f"请分析以下小说内容，提取关键信息：\n\n{source_content}"
+        prompt = (
+            "Analyze the following source material and produce a concise project overview in English. "
+            "Summarize the main plot, genre, theme, and world setting.\n\n"
+            f"{source_content}"
+        )
 
         result = await generator.generate(
             TextGenerationRequest(
@@ -1521,15 +1524,13 @@ class ProjectManager:
         )
         response_text = result.text
 
-        # 解析并验证响应
         overview = ProjectOverview.model_validate_json(response_text)
         overview_dict = overview.model_dump()
         overview_dict["generated_at"] = datetime.now().isoformat()
 
-        # 保存到 project.json
         project = self.load_project(project_name)
         project["overview"] = overview_dict
         self.save_project(project_name, project)
 
-        logger.info("项目概述已生成并保存")
+        logger.info("Project overview generated and saved")
         return overview_dict

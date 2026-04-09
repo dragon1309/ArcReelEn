@@ -6,9 +6,9 @@ import { SlashCommandMenu } from "./SlashCommandMenu";
 import type { SlashCommandMenuHandle } from "./SlashCommandMenu";
 
 const SKILLS = [
-  { name: "manga-workflow", description: "完整工作流", scope: "project" as const, path: "/tmp/a" },
-  { name: "generate-script", description: "用 Gemini 生成 JSON 剧本", scope: "project" as const, path: "/tmp/b" },
-  { name: "generate-video", description: "用 Veo 生成视频片段", scope: "project" as const, path: "/tmp/c" },
+  { name: "manga-workflow", description: "Complete end-to-end workflow", scope: "project" as const, path: "/tmp/a" },
+  { name: "generate-script", description: "Generate a JSON script with Gemini", scope: "project" as const, path: "/tmp/b" },
+  { name: "generate-video", description: "Generate a video clip with Veo", scope: "project" as const, path: "/tmp/c" },
 ];
 
 describe("SlashCommandMenu", () => {
@@ -32,8 +32,8 @@ describe("SlashCommandMenu", () => {
     expect(screen.queryByText(/manga-workflow/)).not.toBeInTheDocument();
   });
 
-  it("filters skills by Chinese label", () => {
-    render(<SlashCommandMenu filter="剧本" onSelect={onSelect} />);
+  it("filters skills by fallback label", () => {
+    render(<SlashCommandMenu filter="script" onSelect={onSelect} />);
     expect(screen.getByText(/generate-script/)).toBeInTheDocument();
     expect(screen.queryByText(/manga-workflow/)).not.toBeInTheDocument();
   });
@@ -49,11 +49,11 @@ describe("SlashCommandMenu", () => {
     expect(onSelect).toHaveBeenCalledWith("/manga-workflow");
   });
 
-  it("displays Chinese labels for known skills", () => {
+  it("displays English labels for known skills", () => {
     render(<SlashCommandMenu filter="" onSelect={onSelect} />);
-    expect(screen.getByText("视频工作流")).toBeInTheDocument();
-    expect(screen.getByText("生成剧本")).toBeInTheDocument();
-    expect(screen.getByText("生成视频")).toBeInTheDocument();
+    expect(screen.getByText("Video Workflow")).toBeInTheDocument();
+    expect(screen.getByText("Generate Script")).toBeInTheDocument();
+    expect(screen.getByText("Generate Video")).toBeInTheDocument();
   });
 
   it("shows distinct icons per skill", () => {

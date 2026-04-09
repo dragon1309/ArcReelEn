@@ -205,6 +205,8 @@ async def upload_file(
 
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail=f"项目 '{project_name}' 不存在")
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
@@ -248,6 +250,8 @@ async def list_project_files(project_name: str, _user: CurrentUser):
 
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail=f"项目 '{project_name}' 不存在")
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
@@ -315,6 +319,8 @@ async def update_source_file(
 
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail=f"项目 '{project_name}' 不存在")
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:

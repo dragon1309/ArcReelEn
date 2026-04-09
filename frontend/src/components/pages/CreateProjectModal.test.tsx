@@ -29,6 +29,7 @@ describe("CreateProjectModal", () => {
       success: true,
       name: "project-aa11bb22",
       project: {
+        language: "en",
         title: "演示项目",
         content_mode: "narration",
         style: "Photographic",
@@ -60,6 +61,7 @@ describe("CreateProjectModal", () => {
       success: true,
       name: "project-aa11bb22",
       project: {
+        language: "en",
         title: "演示项目",
         content_mode: "narration",
         style: "Photographic",

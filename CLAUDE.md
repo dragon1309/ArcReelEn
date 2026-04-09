@@ -3,8 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## 语言规范
-- **回答用户必须使用中文**：所有回复、任务清单及计划文件，均须使用中文
-
+- **Answers to users must be in English:** All replies, task lists, and plan documents must be in English.
 ## 项目概述
 
 ArcReel 是一个 AI 视频生成平台，将小说转化为短视频。三层架构：

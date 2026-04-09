@@ -144,6 +144,7 @@ vi.mock("./lorebook/AddClueForm", () => ({
 
 function makeProjectData(overrides: Partial<ProjectData> = {}): ProjectData {
   return {
+    language: "en",
     title: "Demo",
     content_mode: "narration",
     style: "Anime",

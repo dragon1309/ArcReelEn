@@ -157,7 +157,7 @@ export function CustomProviderDetail({ providerId, onDeleted, onSaved }: CustomP
           <div className="flex justify-between">
             <span className="text-gray-500">创建时间</span>
             <span className="text-gray-300">
-              {new Date(provider.created_at).toLocaleDateString("zh-CN")}
+              {new Date(provider.created_at).toLocaleDateString("en-US")}
             </span>
           </div>
         </div>

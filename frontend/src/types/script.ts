@@ -35,6 +35,7 @@ export type CameraMotion = (typeof CAMERA_MOTIONS)[number];
 export type TransitionType = "cut" | "fade" | "dissolve";
 export type DurationSeconds = number;
 export type AssetStatus = "pending" | "storyboard_ready" | "completed";
+export type SceneType = "story" | "establishing";
 
 export interface Dialogue {
   speaker: string;
@@ -86,7 +87,7 @@ export interface DramaScene {
   scene_id: string;
   duration_seconds: DurationSeconds;
   segment_break: boolean;
-  scene_type: string;
+  scene_type: SceneType;
   characters_in_scene: string[];
   clues_in_scene: string[];
   image_prompt: ImagePrompt | string;

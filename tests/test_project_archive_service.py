@@ -595,7 +595,7 @@ class TestProjectArchiveService:
         with pytest.raises(ProjectArchiveValidationError) as exc_info:
             service.import_project_archive(archive_path, uploaded_filename="missing-clue.zip")
 
-        assert any("不存在于 project.json 的线索" in error for error in exc_info.value.errors)
+        assert any("unknown project clues" in error for error in exc_info.value.errors)
         assert exc_info.value.extra["diagnostics"]["blocking"]
 
     def test_export_dirty_project_emits_diagnostics_and_repairs_snapshot(self, tmp_path):
