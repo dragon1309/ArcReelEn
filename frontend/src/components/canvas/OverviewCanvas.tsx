@@ -59,7 +59,7 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
   const handleUpload = useCallback(
     async (file: File) => {
       await API.uploadFile(projectName, "source", file);
-      useAppStore.getState().pushToast(`源文件 "${file.name}" 上传成功`, "success");
+      useAppStore.getState().pushToast(`Source file "${file.name}" uploaded successfully`, "success");
     },
     [projectName],
   );
@@ -74,11 +74,11 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
     try {
       await API.generateOverview(projectName);
       await refreshProject();
-      useAppStore.getState().pushToast("项目概述已重新生成", "success");
+      useAppStore.getState().pushToast("Project overview regenerated", "success");
     } catch (err) {
       useAppStore
         .getState()
-        .pushToast(`重新生成失败: ${(err as Error).message}`, "error");
+        .pushToast(`Failed to regenerate the overview: ${(err as Error).message}`, "error");
     } finally {
       setRegenerating(false);
     }
@@ -94,11 +94,11 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
       try {
         await API.uploadStyleImage(projectName, file);
         await refreshProject();
-        useAppStore.getState().pushToast("风格参考图已更新", "success");
+        useAppStore.getState().pushToast("Style reference image updated", "success");
       } catch (err) {
         useAppStore
           .getState()
-          .pushToast(`上传失败: ${(err as Error).message}`, "error");
+          .pushToast(`Upload failed: ${(err as Error).message}`, "error");
       } finally {
         setUploadingStyleImage(false);
       }
@@ -108,17 +108,17 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
 
   const handleDeleteStyleImage = useCallback(async () => {
     if (deletingStyleImage || !projectData?.style_image) return;
-    if (!confirm("确定删除当前风格参考图吗？")) return;
+    if (!confirm("Delete the current style reference image?")) return;
 
     setDeletingStyleImage(true);
     try {
       await API.deleteStyleImage(projectName);
       await refreshProject();
-      useAppStore.getState().pushToast("风格参考图已删除", "success");
+      useAppStore.getState().pushToast("Style reference image deleted", "success");
     } catch (err) {
       useAppStore
         .getState()
-        .pushToast(`删除失败: ${(err as Error).message}`, "error");
+        .pushToast(`Delete failed: ${(err as Error).message}`, "error");
     } finally {
       setDeletingStyleImage(false);
     }
@@ -130,11 +130,11 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
     try {
       await API.updateStyleDescription(projectName, styleDescriptionDraft.trim());
       await refreshProject();
-      useAppStore.getState().pushToast("风格描述已保存", "success");
+      useAppStore.getState().pushToast("Style description saved", "success");
     } catch (err) {
       useAppStore
         .getState()
-        .pushToast(`保存失败: ${(err as Error).message}`, "error");
+        .pushToast(`Save failed: ${(err as Error).message}`, "error");
     } finally {
       setSavingStyleDescription(false);
     }
@@ -143,7 +143,7 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
   if (!projectData) {
     return (
       <div className="flex h-full items-center justify-center text-gray-500">
-        加载项目数据中...
+        Loading project data...
       </div>
     );
   }
@@ -161,24 +161,24 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
     <section className="rounded-2xl border border-gray-800 bg-gray-900/90 p-4 sm:p-5">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
-          <h3 className="text-sm font-semibold text-gray-200">项目风格</h3>
+          <h3 className="text-sm font-semibold text-gray-200">Project Style</h3>
           <p className="max-w-2xl text-xs leading-5 text-gray-500">
-            参考图会参与后续画面生成；风格描述用于补充视觉规则，校准整体调性、材质和镜头气质。
+            The reference image feeds into future visual generation, while the style description adds visual rules to calibrate the overall tone, materials, and camera feel.
           </p>
         </div>
         <div className="inline-flex items-center rounded-full border border-gray-700 bg-gray-800 px-3 py-1 text-xs text-gray-300">
-          {projectData.style || "未设置风格标签"}
+          {projectData.style || "No style tag set"}
         </div>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
         <div className="space-y-3">
           {styleImageUrl ? (
-            <PreviewableImageFrame src={styleImageUrl} alt="项目风格参考图">
+            <PreviewableImageFrame src={styleImageUrl} alt="Project style reference image">
               <div className="overflow-hidden rounded-xl border border-gray-700 bg-gray-950/70">
                 <img
                   src={styleImageUrl}
-                  alt="项目风格参考图"
+                  alt="Project style reference image"
                   className="aspect-[4/3] w-full object-cover"
                 />
               </div>
@@ -191,17 +191,17 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
               className={`flex aspect-[4/3] w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-gray-700 bg-gray-950/40 px-4 text-sm text-gray-500 transition-colors hover:border-gray-500 hover:text-gray-300 disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`}
             >
               <Upload className="h-4 w-4" />
-              <span>{uploadingStyleImage ? "上传中..." : "上传风格参考图"}</span>
-              <span className="text-xs text-gray-600">支持 PNG / JPG / WEBP</span>
+              <span>{uploadingStyleImage ? "Uploading..." : "Upload style reference image"}</span>
+              <span className="text-xs text-gray-600">Supports PNG / JPG / WEBP</span>
             </button>
           )}
 
           <div className="rounded-xl border border-gray-800 bg-gray-950/40 p-3">
-            <p className="text-xs font-medium text-gray-400">使用说明</p>
+            <p className="text-xs font-medium text-gray-400">Usage Notes</p>
             <p className="mt-1 text-sm leading-6 text-gray-300">
               {styleImageUrl
-                ? "当前参考图会作为统一视觉基线，用于角色图、分镜图和视频生成。"
-                : "还没有绑定项目级参考图，可以先上传一张目标风格样片作为统一基线。"}
+                ? "The current reference image serves as the shared visual baseline for character art, storyboards, and video generation."
+                : "There is no project-level reference image yet. Upload a target style sample first to establish a shared baseline."}
             </p>
 
             <div className="mt-3 flex flex-wrap gap-2">
@@ -212,7 +212,7 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
                 className={`inline-flex items-center gap-1.5 rounded-lg border border-gray-700 px-3 py-2 text-sm text-gray-300 transition-colors hover:border-gray-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`}
               >
                 <ImagePlus className="h-4 w-4" />
-                {styleImageUrl ? "替换参考图" : "上传参考图"}
+                {styleImageUrl ? "Replace reference image" : "Upload reference image"}
               </button>
               {styleImageUrl && (
                 <button
@@ -222,7 +222,7 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
                   className={`inline-flex items-center gap-1.5 rounded-lg border border-red-500/30 px-3 py-2 text-sm text-red-300 transition-colors hover:border-red-400/50 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`}
                 >
                   <Trash2 className="h-4 w-4" />
-                  {deletingStyleImage ? "删除中..." : "删除参考图"}
+                  {deletingStyleImage ? "Deleting..." : "Delete reference image"}
                 </button>
               )}
             </div>
@@ -234,19 +234,19 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
             accept=".png,.jpg,.jpeg,.webp"
             onChange={handleStyleImageChange}
             className="hidden"
-            aria-label="上传风格参考图"
+            aria-label="Upload style reference image"
           />
         </div>
 
         <div className="rounded-xl border border-gray-800 bg-gray-950/35 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <label htmlFor="style-description-textarea" className="text-xs font-medium text-gray-400">风格描述</label>
+            <label htmlFor="style-description-textarea" className="text-xs font-medium text-gray-400">Style Description</label>
             <span className="text-[11px] text-gray-600">
-              {styleDescriptionDraft.trim().length} 字
+              {styleDescriptionDraft.trim().length} characters
             </span>
           </div>
           <p className="mt-1 text-xs leading-5 text-gray-500">
-            上传参考图后系统会自动分析并填充风格描述；你也可以继续手动校准。
+            After you upload a reference image, the system will analyze it and prefill the style description. You can continue refining it manually.
           </p>
 
           <textarea
@@ -255,14 +255,14 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
             onChange={(e) => setStyleDescriptionDraft(e.target.value)}
             rows={8}
             className={`mt-3 min-h-44 w-full rounded-xl border border-gray-700 bg-gray-800/80 px-4 py-3 text-sm leading-relaxed text-gray-200 placeholder-gray-500 focus:border-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500`}
-            placeholder="上传风格参考图后，系统会自动分析并填充风格描述；也可以手动编辑。"
+            placeholder="After you upload a style reference image, the system will analyze it and prefill the style description. You can also edit it manually."
           />
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
             <p className="text-xs leading-5 text-gray-500">
               {styleImageUrl
-                ? "建议把风格描述用于补充光线、色彩、材质与镜头语言。"
-                : "没有参考图时，也可以先用文字明确画面风格和审美约束。"}
+                ? "Use the style description to add detail about lighting, color, materials, and camera language."
+                : "Even without a reference image, you can define the visual style and aesthetic constraints in text first."}
             </p>
             {styleDescriptionDirty && (
               <button
@@ -271,7 +271,7 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
                 disabled={savingStyleDescription}
                 className={`rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`}
               >
-                {savingStyleDescription ? "保存中..." : "保存风格描述"}
+                {savingStyleDescription ? "Saving..." : "Save Style Description"}
               </button>
             )}
           </div>
@@ -287,9 +287,9 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
           <h1 className="text-2xl font-bold text-gray-100">{projectData.title}</h1>
           <p className="mt-1 text-sm text-gray-400">
             {projectData.content_mode === "narration"
-              ? "说书+画面模式"
-              : "剧集动画模式"}{" "}
-            · {projectData.style || "未设置风格"}
+              ? "Narration + Visuals Mode"
+              : "Episode Animation Mode"}{" "}
+            · {projectData.style || "No style set"}
           </p>
         </div>
 
@@ -305,24 +305,24 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
             {overview && (
               <div className="space-y-3 rounded-xl border border-gray-800 bg-gray-900 p-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-gray-300">项目概述</h3>
+                  <h3 className="text-sm font-semibold text-gray-300">Project Overview</h3>
                   <button
                     type="button"
                     onClick={() => void handleRegenerate()}
                     disabled={regenerating}
                     className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs text-gray-400 transition-colors hover:bg-gray-800 hover:text-gray-200 disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`}
-                    title="重新生成概述"
+                    title="Regenerate overview"
                   >
                     <RefreshCw
                       className={`h-3 w-3 ${regenerating ? "animate-spin" : ""}`}
                     />
-                    <span>{regenerating ? "生成中..." : "重新生成"}</span>
+                    <span>{regenerating ? "Generating..." : "Regenerate"}</span>
                   </button>
                 </div>
                 <p className="text-sm text-gray-400">{overview.synopsis}</p>
                 <div className="flex gap-4 text-xs text-gray-500">
-                  <span>题材: {overview.genre}</span>
-                  <span>主题: {overview.theme}</span>
+                  <span>Genre: {overview.genre}</span>
+                  <span>Theme: {overview.theme}</span>
                 </div>
               </div>
             )}
@@ -340,8 +340,8 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
                         ? Math.round((cat.completed / cat.total) * 100)
                         : 0;
                     const labels: Record<string, string> = {
-                      characters: "角色",
-                      clues: "线索",
+                      characters: "Characters",
+                      clues: "Clues",
                     };
                     return (
                       <div
@@ -375,45 +375,45 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
 
             {costLoading && (
               <div className="rounded-xl border border-gray-800 bg-gray-900 p-4">
-                <p className="text-sm text-gray-500 animate-pulse">正在计算费用...</p>
+                <p className="text-sm text-gray-500 animate-pulse">Calculating costs...</p>
               </div>
             )}
             {costError && (
               <div className="rounded-xl border border-red-900/50 bg-red-950/30 p-4">
-                <p className="text-sm text-red-400">费用估算失败: {costError}</p>
+                <p className="text-sm text-red-400">Cost estimation failed: {costError}</p>
               </div>
             )}
 
             {projectTotals && (
               <div className="rounded-xl border border-gray-800 bg-gray-900 p-4 tabular-nums">
-                <p className="mb-3 text-sm font-semibold text-gray-300">项目总费用</p>
+                <p className="mb-3 text-sm font-semibold text-gray-300">Total Project Cost</p>
                 <dl className="flex flex-wrap items-start justify-between gap-6">
                   <div className="min-w-0">
-                    <dt className="mb-1 text-[11px] text-gray-600">预估</dt>
+                    <dt className="mb-1 text-[11px] text-gray-600">Estimated</dt>
                     <dd className="text-sm text-gray-400">
-                      <span className="text-gray-500">分镜 </span>
+                      <span className="text-gray-500">Storyboard </span>
                       <span className="text-gray-200">{formatCost(projectTotals.estimate.image)}</span>
-                      <span className="ml-3 text-gray-500">视频 </span>
+                      <span className="ml-3 text-gray-500">Video </span>
                       <span className="text-gray-200">{formatCost(projectTotals.estimate.video)}</span>
-                      <span className="ml-3 text-gray-500">总计 </span>
+                      <span className="ml-3 text-gray-500">Total </span>
                       <span className="font-semibold text-amber-400">{formatCost(totalBreakdown(projectTotals.estimate))}</span>
                     </dd>
                   </div>
                   <div role="separator" className="h-8 w-px bg-gray-800" />
                   <div className="min-w-0">
-                    <dt className="mb-1 text-[11px] text-gray-600">实际</dt>
+                    <dt className="mb-1 text-[11px] text-gray-600">Actual</dt>
                     <dd className="text-sm text-gray-400">
-                      <span className="text-gray-500">分镜 </span>
+                      <span className="text-gray-500">Storyboard </span>
                       <span className="text-gray-200">{formatCost(projectTotals.actual.image)}</span>
-                      <span className="ml-3 text-gray-500">视频 </span>
+                      <span className="ml-3 text-gray-500">Video </span>
                       <span className="text-gray-200">{formatCost(projectTotals.actual.video)}</span>
                       {projectTotals.actual.character_and_clue && (
                         <>
-                          <span className="ml-3 text-gray-500">角色/线索 </span>
+                          <span className="ml-3 text-gray-500">Characters/Clues </span>
                           <span className="text-gray-200">{formatCost(projectTotals.actual.character_and_clue)}</span>
                         </>
                       )}
-                      <span className="ml-3 text-gray-500">总计 </span>
+                      <span className="ml-3 text-gray-500">Total </span>
                       <span className="font-semibold text-emerald-400">{formatCost(totalBreakdown(projectTotals.actual))}</span>
                     </dd>
                   </div>
@@ -422,7 +422,7 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
             )}
 
             <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-gray-300">剧集</h3>
+              <h3 className="text-sm font-semibold text-gray-300">Episodes</h3>
               {(projectData.episodes?.length ?? 0) === 0 ? (
                 <p className="text-sm text-gray-500">
                   No episodes yet. Use the AI assistant to generate a script.
@@ -440,22 +440,22 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
                       </span>
                       <span className="text-sm text-gray-200">{ep.title}</span>
                       <span className="text-xs text-gray-500">
-                        {ep.scenes_count ?? "?"} 片段 · {ep.status ?? "draft"}
+                        {ep.scenes_count ?? "?"} segments · {ep.status ?? "draft"}
                       </span>
                       {epCost && (
                         <span className="ml-auto flex min-w-0 flex-shrink flex-wrap gap-4 text-xs text-gray-400">
                           <span>
-                            <span className="text-gray-500">预估 </span>
-                            <span className="text-gray-500">分镜 </span><span className="text-gray-300">{formatCost(epCost.totals.estimate.image)}</span>
-                            <span className="ml-2 text-gray-500">视频 </span><span className="text-gray-300">{formatCost(epCost.totals.estimate.video)}</span>
-                            <span className="ml-2 text-gray-500">总计 </span><span className="font-medium text-amber-400">{formatCost(totalBreakdown(epCost.totals.estimate))}</span>
+                            <span className="text-gray-500">Estimated </span>
+                            <span className="text-gray-500">Storyboard </span><span className="text-gray-300">{formatCost(epCost.totals.estimate.image)}</span>
+                            <span className="ml-2 text-gray-500">Video </span><span className="text-gray-300">{formatCost(epCost.totals.estimate.video)}</span>
+                            <span className="ml-2 text-gray-500">Total </span><span className="font-medium text-amber-400">{formatCost(totalBreakdown(epCost.totals.estimate))}</span>
                           </span>
                           <span className="text-gray-700">|</span>
                           <span>
-                            <span className="text-gray-500">实际 </span>
-                            <span className="text-gray-500">分镜 </span><span className="text-gray-300">{formatCost(epCost.totals.actual.image)}</span>
-                            <span className="ml-2 text-gray-500">视频 </span><span className="text-gray-300">{formatCost(epCost.totals.actual.video)}</span>
-                            <span className="ml-2 text-gray-500">总计 </span><span className="font-medium text-emerald-400">{formatCost(totalBreakdown(epCost.totals.actual))}</span>
+                            <span className="text-gray-500">Actual </span>
+                            <span className="text-gray-500">Storyboard </span><span className="text-gray-300">{formatCost(epCost.totals.actual.image)}</span>
+                            <span className="ml-2 text-gray-500">Video </span><span className="text-gray-300">{formatCost(epCost.totals.actual.video)}</span>
+                            <span className="ml-2 text-gray-500">Total </span><span className="font-medium text-emerald-400">{formatCost(totalBreakdown(epCost.totals.actual))}</span>
                           </span>
                         </span>
                       )}

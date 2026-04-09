@@ -202,7 +202,7 @@ describe("StudioCanvasRouter", () => {
 
   it("shows loading state when currentProjectName is missing", () => {
     renderAt("/");
-    expect(screen.getByText("加载中...")).toBeInTheDocument();
+    expect(screen.getByText("Loading...")).toBeInTheDocument();
   });
 
   it("routes characters/clues/source/episodes views correctly", async () => {
@@ -232,7 +232,7 @@ describe("StudioCanvasRouter", () => {
     viewEpisodes.unmount();
 
     await waitFor(() => {
-      expect(screen.queryByText("加载中...")).not.toBeInTheDocument();
+      expect(screen.queryByText("Loading...")).not.toBeInTheDocument();
     });
   });
 
@@ -282,7 +282,7 @@ describe("StudioCanvasRouter", () => {
         "Hero",
         "hero description",
       );
-      expect(useAppStore.getState().toast?.text).toContain("生成任务已提交");
+      expect(useAppStore.getState().toast?.text).toContain("generation task submitted");
       expect(useAppStore.getState().toast?.tone).toBe("success");
     });
 
@@ -313,14 +313,14 @@ describe("StudioCanvasRouter", () => {
       expect(API.updateClue).toHaveBeenCalledWith("demo", "Key", {
         description: "new clue",
       });
-      expect(useAppStore.getState().toast?.text).toContain("更新线索失败");
+      expect(useAppStore.getState().toast?.text).toContain("Failed to update the clue");
       expect(useAppStore.getState().toast?.tone).toBe("error");
     });
 
     fireEvent.click(screen.getByText("generate-clue"));
     await waitFor(() => {
       expect(API.generateClue).toHaveBeenCalledWith("demo", "Key", "key description");
-      expect(useAppStore.getState().toast?.text).toContain("提交失败");
+      expect(useAppStore.getState().toast?.text).toContain("Submission failed");
     });
 
     fireEvent.click(screen.getByText("add-clue"));
@@ -359,7 +359,7 @@ describe("StudioCanvasRouter", () => {
       expect(API.updateSegment).toHaveBeenCalledWith("demo", "SEG-1", {
         image_prompt: "new prompt",
       });
-      expect(useAppStore.getState().toast?.text).toContain("更新 Prompt 失败");
+      expect(useAppStore.getState().toast?.text).toContain("Failed to update the prompt");
     });
 
     fireEvent.click(screen.getByText("generate-storyboard"));
@@ -370,7 +370,7 @@ describe("StudioCanvasRouter", () => {
         "image prompt",
         "episode_1.json",
       );
-      expect(useAppStore.getState().toast?.text).toContain("生成分镜失败");
+      expect(useAppStore.getState().toast?.text).toContain("Failed to generate the storyboard");
     });
 
     fireEvent.click(screen.getByText("generate-video"));
@@ -382,7 +382,7 @@ describe("StudioCanvasRouter", () => {
         "episode_1.json",
         4,
       );
-      expect(useAppStore.getState().toast?.text).toContain("生成视频失败");
+      expect(useAppStore.getState().toast?.text).toContain("Failed to generate the video");
     });
   });
 });

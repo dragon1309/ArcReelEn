@@ -103,7 +103,7 @@ describe("useProjectEventsSSE", () => {
     );
     expect(useAppStore.getState().workspaceNotifications[0]).toEqual(
       expect.objectContaining({
-        text: "AI 刚新增了 角色「hero」，点击查看",
+        text: "AI created 角色「hero」. Click to open",
         target: expect.objectContaining({
           type: "character",
           id: "hero",
@@ -196,12 +196,12 @@ describe("useProjectEventsSSE", () => {
 
     await waitFor(() => {
       expect(API.getProject).toHaveBeenCalledWith("demo");
-      expect(useAppStore.getState().toast?.text).toBe("分镜「E1S01」的分镜图已生成");
+      expect(useAppStore.getState().toast?.text).toBe("Generated storyboard for 分镜「E1S01」");
     });
     expect(useAppStore.getState().toast?.tone).toBe("success");
     expect(useAppStore.getState().workspaceNotifications[0]).toEqual(
       expect.objectContaining({
-        text: "分镜「E1S01」的分镜图已生成",
+        text: "Generated storyboard for 分镜「E1S01」",
         tone: "success",
         target: null,
       }),
@@ -272,7 +272,7 @@ describe("useProjectEventsSSE", () => {
 
     await waitFor(() => {
       expect(API.getProject).toHaveBeenCalledWith("demo");
-      expect(useAppStore.getState().toast?.text).toBe("线索「玉佩」已更新");
+      expect(useAppStore.getState().toast?.text).toBe("Updated 线索「玉佩」");
     });
 
     expect(useAppStore.getState().getEntityRevision("character:hero")).toBe(1);
@@ -282,7 +282,7 @@ describe("useProjectEventsSSE", () => {
     expect(useAppStore.getState().workspaceNotifications).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          text: "AI 刚新增了 2 个角色：hero、mage，点击查看",
+          text: "AI created 2 characters: hero, mage. Click to open",
           target: expect.objectContaining({
             type: "character",
             id: "hero",
@@ -290,7 +290,7 @@ describe("useProjectEventsSSE", () => {
           }),
         }),
         expect.objectContaining({
-          text: "AI 刚更新了 线索「玉佩」，点击查看",
+          text: "AI updated 线索「玉佩」. Click to open",
           target: expect.objectContaining({
             type: "clue",
             id: "玉佩",
@@ -424,7 +424,7 @@ describe("useProjectEventsSSE", () => {
       );
     });
 
-    // fingerprints 应立即（同步）写入 store，无需等待 getProject
+    // fingerprints should be written to the store immediately, without waiting for getProject
     expect(useProjectsStore.getState().getAssetFingerprint("storyboards/scene_E1S01.png")).toBe(1710288000);
   });
 });
