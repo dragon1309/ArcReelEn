@@ -10,9 +10,9 @@ interface TabSaveFooterProps {
 }
 
 /**
- * 配置 Tab 底部保存页脚。
- * - isDirty=false: 正常嵌入，保存按钮禁用
- * - isDirty=true:  sticky 固定在视口底部，保存按钮高亮
+ * Sticky save footer for configuration tabs.
+ * - isDirty=false: inline layout, save button disabled
+ * - isDirty=true: sticky at the bottom of the viewport, save button highlighted
  */
 export function TabSaveFooter({
   isDirty,
@@ -32,7 +32,7 @@ export function TabSaveFooter({
     >
       <div className="flex items-center gap-3 min-w-0">
         {isDirty && !error && (
-          <span className="text-sm text-gray-400">有未保存的更改</span>
+          <span className="text-sm text-gray-400">You have unsaved changes</span>
         )}
         {error && (
           <span className="text-sm text-rose-400 truncate">{error}</span>
@@ -46,7 +46,7 @@ export function TabSaveFooter({
             disabled={controlsDisabled}
             className="inline-flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-200 transition-colors hover:border-gray-600 hover:bg-gray-800/80 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            撤销
+            Revert
           </button>
         )}
         <button
@@ -64,7 +64,7 @@ export function TabSaveFooter({
           ) : (
             <Save className="h-4 w-4" />
           )}
-          {saving ? "保存中…" : "保存"}
+          {saving ? "Saving..." : "Save"}
         </button>
       </div>
     </div>

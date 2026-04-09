@@ -15,7 +15,7 @@ import { API } from "@/api";
 import { ArchiveDiagnosticsDialog } from "@/components/shared/ArchiveDiagnosticsDialog";
 import type { ExportDiagnostics, WorkspaceNotification } from "@/types";
 
-/** 通过隐藏 <a> 触发浏览器下载，避免 window.open 产生空白标签页 */
+/** Trigger a browser download through a hidden <a> to avoid opening a blank tab. */
 function triggerBrowserDownload(url: string) {
   const a = document.createElement("a");
   a.href = url;
@@ -30,11 +30,11 @@ function triggerBrowserDownload(url: string) {
 // ---------------------------------------------------------------------------
 
 const PHASES = [
-  { key: "setup", label: "准备中" },
-  { key: "worldbuilding", label: "世界观" },
-  { key: "scripting", label: "剧本创作" },
-  { key: "production", label: "制作中" },
-  { key: "completed", label: "已完成" },
+  { key: "setup", label: "Setup" },
+  { key: "worldbuilding", label: "Worldbuilding" },
+  { key: "scripting", label: "Scriptwriting" },
+  { key: "production", label: "Production" },
+  { key: "completed", label: "Completed" },
 ] as const;
 
 type PhaseKey = (typeof PHASES)[number]["key"];
@@ -51,7 +51,7 @@ function PhaseStepper({
   const currentIdx = PHASES.findIndex((p) => p.key === currentPhase);
 
   return (
-    <nav className="flex items-center gap-1" aria-label="工作流阶段">
+    <nav className="flex items-center gap-1" aria-label="Workflow phases">
       {PHASES.map((phase, idx) => {
         const isCompleted = currentIdx > idx;
         const isCurrent = currentIdx === idx;
@@ -128,10 +128,9 @@ export function GlobalHeader({ onNavigateBack }: GlobalHeaderProps) {
   const contentMode = currentProjectData?.content_mode;
   const runningCount = stats.running + stats.queued;
   const displayProjectTitle =
-    currentProjectData?.title?.trim() || currentProjectName || "未选择项目";
+    currentProjectData?.title?.trim() || currentProjectName || "No project selected";
   const unreadNotificationCount = workspaceNotifications.filter((item) => !item.read).length;
 
-  // 加载费用统计数据（任务完成时自动刷新）
   const completedTaskCount = stats.succeeded + stats.failed;
   useEffect(() => {
     API.getUsageStats(currentProjectName ? { projectName: currentProjectName } : {})
@@ -146,9 +145,8 @@ export function GlobalHeader({ onNavigateBack }: GlobalHeaderProps) {
   }, [fetchConfigStatus]);
 
 
-  // Format content mode badge text
   const modeBadgeText =
-    contentMode === "drama" ? "剧集动画 16:9" : "说书模式 9:16";
+    contentMode === "drama" ? "Drama Animation 16:9" : "Narration Mode 9:16";
 
   // Format cost display – show multi-currency summary
   const costByCurrency = usageStats?.cost_by_currency ?? {};
@@ -186,9 +184,12 @@ export function GlobalHeader({ onNavigateBack }: GlobalHeaderProps) {
       );
       triggerBrowserDownload(url);
       setExportDialogOpen(false);
-      useAppStore.getState().pushToast("剪映草稿导出已开始，请将下载的 ZIP 解压到剪映草稿目录中", "success");
+      useAppStore.getState().pushToast(
+        "Jianying draft export has started. Unzip the downloaded archive into your Jianying drafts folder.",
+        "success",
+      );
     } catch (err) {
-      useAppStore.getState().pushToast(`剪映草稿导出失败: ${(err as Error).message}`, "error");
+      useAppStore.getState().pushToast(`Jianying draft export failed: ${(err as Error).message}`, "error");
     } finally {
       setJianyingExporting(false);
     }

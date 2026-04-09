@@ -89,35 +89,35 @@ const smallBtnClassName =
 const MODEL_ROUTING_FIELDS = [
   {
     key: "haikuModel" as const,
-    label: "Haiku 模型",
+    label: "Haiku Model",
     envVar: "ANTHROPIC_DEFAULT_HAIKU_MODEL",
-    hint: "轻量任务（分类、提取、简单问答）",
+    hint: "Lightweight tasks: classification, extraction, simple Q&A",
     patchKey: "anthropic_default_haiku_model" as const,
   },
   {
     key: "sonnetModel" as const,
-    label: "Sonnet 模型",
+    label: "Sonnet Model",
     envVar: "ANTHROPIC_DEFAULT_SONNET_MODEL",
-    hint: "均衡任务（写作、编排、多步推理）",
+    hint: "Balanced tasks: writing, orchestration, multi-step reasoning",
     patchKey: "anthropic_default_sonnet_model" as const,
   },
   {
     key: "opusModel" as const,
-    label: "Opus 模型",
+    label: "Opus Model",
     envVar: "ANTHROPIC_DEFAULT_OPUS_MODEL",
-    hint: "复杂任务（长文创作、深度分析）",
+    hint: "Complex tasks: long-form writing, deep analysis",
     patchKey: "anthropic_default_opus_model" as const,
   },
   {
     key: "subagentModel" as const,
-    label: "子 Agent 模型",
+    label: "Subagent Model",
     envVar: "CLAUDE_CODE_SUBAGENT_MODEL",
-    hint: "Subagent 并行执行时使用的模型",
+    hint: "Model used when subagents run in parallel",
     patchKey: "claude_code_subagent_model" as const,
   },
 ] as const;
 
-// Small inline clear button shown next to "当前：" when a value is set
+// Small inline clear button shown next to "Current:" when a value is set
 const inlineClearClassName =
   "ml-1.5 inline-flex items-center rounded p-0.5 text-gray-600 transition-colors hover:text-rose-400 disabled:cursor-not-allowed disabled:opacity-50";
 
@@ -319,7 +319,7 @@ export function AgentConfigTab({ visible }: AgentConfigTabProps) {
                 {settings.anthropic_api_key.is_set && (
                   <div className="flex items-center text-xs text-gray-500">
                     <span className="truncate">
-                      当前：{settings.anthropic_api_key.masked ?? "已设置"}
+                      Current: {settings.anthropic_api_key.masked ?? "Set"}
                     </span>
                     <button
                       type="button"
@@ -332,7 +332,7 @@ export function AgentConfigTab({ visible }: AgentConfigTabProps) {
                       }
                       disabled={isBusy}
                       className={inlineClearClassName}
-                      aria-label="清除已保存的 Anthropic API Key"
+                      aria-label="Clear saved Anthropic API key"
                     >
                       {clearingField === "anthropic_api_key" ? (
                         <Loader2 className="h-3 w-3 animate-spin" />
@@ -344,7 +344,7 @@ export function AgentConfigTab({ visible }: AgentConfigTabProps) {
                 )}
               </div>
               <p className="mt-0.5 text-xs text-gray-500">
-                对应环境变量 ANTHROPIC_API_KEY
+                Mapped to environment variable `ANTHROPIC_API_KEY`
               </p>
               <div className="relative mt-2">
                 <input
@@ -364,7 +364,7 @@ export function AgentConfigTab({ visible }: AgentConfigTabProps) {
                     type="button"
                     onClick={() => updateDraft("anthropicKey", "")}
                     className={`absolute right-8 top-1/2 -translate-y-1/2 ${smallBtnClassName}`}
-                    aria-label="清除输入"
+                    aria-label="Clear input"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
@@ -373,7 +373,7 @@ export function AgentConfigTab({ visible }: AgentConfigTabProps) {
                   type="button"
                   onClick={() => setShowKey((v) => !v)}
                   className={`absolute right-2 top-1/2 -translate-y-1/2 ${smallBtnClassName}`}
-                  aria-label={showKey ? "隐藏密钥" : "显示密钥"}
+                  aria-label={showKey ? "Hide key" : "Show key"}
                 >
                   {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -398,19 +398,19 @@ export function AgentConfigTab({ visible }: AgentConfigTabProps) {
                     }
                     disabled={isBusy}
                     className="inline-flex items-center gap-1 rounded text-xs text-gray-600 transition-colors hover:text-rose-400 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-indigo-500/60 focus-visible:outline-none"
-                    aria-label="清除已保存的 Anthropic Base URL"
+                    aria-label="Clear saved Anthropic Base URL"
                   >
                     {clearingField === "anthropic_base_url" ? (
                       <Loader2 className="h-3 w-3 animate-spin" />
                     ) : (
                       <X className="h-3 w-3" />
                     )}
-                    清除已保存
+                    Clear saved value
                   </button>
                 )}
               </div>
               <p className="mt-0.5 text-xs text-gray-500">
-                对应 ANTHROPIC_BASE_URL，留空使用官方默认地址
+                Mapped to `ANTHROPIC_BASE_URL`. Leave blank to use the official default endpoint.
               </p>
               <div className="relative mt-2">
                 <input
@@ -429,7 +429,7 @@ export function AgentConfigTab({ visible }: AgentConfigTabProps) {
                     type="button"
                     onClick={() => updateDraft("anthropicBaseUrl", "")}
                     className={`absolute right-2 top-1/2 -translate-y-1/2 ${smallBtnClassName}`}
-                    aria-label="清除 Base URL 输入"
+                    aria-label="Clear Base URL input"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
@@ -444,14 +444,14 @@ export function AgentConfigTab({ visible }: AgentConfigTabProps) {
         {/* ----------------------------------------------------------------- */}
         <div>
           <SectionHeading
-            title="模型配置"
-            description="指定智能体使用的 Claude 模型。留空则使用 Claude Agent SDK 默认值。"
+            title="Model Configuration"
+            description="Choose which Claude models the agent uses. Leave fields blank to keep the Claude Agent SDK defaults."
           />
 
           <div className={cardClassName}>
             <div className="flex items-center justify-between">
               <label htmlFor="agent-model" className="text-sm font-medium text-gray-100">
-                默认模型
+                Default Model
               </label>
               {settings.anthropic_model && (
                 <button
@@ -465,19 +465,19 @@ export function AgentConfigTab({ visible }: AgentConfigTabProps) {
                   }
                   disabled={isBusy}
                   className="inline-flex items-center gap-1 rounded text-xs text-gray-600 transition-colors hover:text-rose-400 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-indigo-500/60 focus-visible:outline-none"
-                  aria-label="清除已保存的模型配置"
+                  aria-label="Clear saved model configuration"
                 >
                   {clearingField === "anthropic_model" ? (
                     <Loader2 className="h-3 w-3 animate-spin" />
                   ) : (
                     <X className="h-3 w-3" />
                   )}
-                  清除已保存
+                  Clear saved value
                 </button>
               )}
             </div>
             <p className="mt-0.5 text-xs text-gray-500">
-              对应 ANTHROPIC_MODEL，覆盖默认模型
+              Maps to ANTHROPIC_MODEL and overrides the default model.
             </p>
             <div className="relative mt-2">
               <input
@@ -496,7 +496,7 @@ export function AgentConfigTab({ visible }: AgentConfigTabProps) {
                   type="button"
                   onClick={() => updateDraft("anthropicModel", "")}
                   className={`absolute right-2 top-1/2 -translate-y-1/2 ${smallBtnClassName}`}
-                  aria-label="清除模型配置输入"
+                  aria-label="Clear model configuration input"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -512,7 +512,7 @@ export function AgentConfigTab({ visible }: AgentConfigTabProps) {
               <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-medium text-gray-100">
                 <span className="inline-flex items-center gap-2">
                   <SlidersHorizontal className="h-4 w-4 text-gray-400" />
-                  高级模型路由
+                  Advanced Model Routing
                 </span>
                 <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-800 bg-gray-900 text-gray-500">
                   <ChevronDown
@@ -523,7 +523,7 @@ export function AgentConfigTab({ visible }: AgentConfigTabProps) {
                 </span>
               </summary>
               <p className="mt-2 text-xs text-gray-500">
-                Claude Agent SDK 支持按能力等级路由到不同模型。留空则统一使用上方的默认模型。
+                Claude Agent SDK can route different capability levels to different models. Leave these blank to use the default model above.
               </p>
               <div className="mt-4 grid gap-4">
                 {MODEL_ROUTING_FIELDS.map(({ key, label, envVar, hint, patchKey }) => {
@@ -547,14 +547,14 @@ export function AgentConfigTab({ visible }: AgentConfigTabProps) {
                             }
                             disabled={isBusy}
                             className="inline-flex items-center gap-1 text-xs text-gray-600 transition-colors hover:text-rose-400 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-indigo-500/60 focus-visible:outline-none rounded"
-                            aria-label={`清除已保存的 ${label}`}
+                            aria-label={`Clear saved ${label}`}
                           >
                             {clearingField === patchKey ? (
                               <Loader2 className="h-3 w-3 animate-spin" />
                             ) : (
                               <X className="h-3 w-3" />
                             )}
-                            清除
+                            Clear
                           </button>
                         )}
                       </div>
@@ -573,7 +573,7 @@ export function AgentConfigTab({ visible }: AgentConfigTabProps) {
                             type="button"
                             onClick={() => updateDraft(key, "")}
                             className={`absolute right-2 top-1/2 -translate-y-1/2 ${smallBtnClassName}`}
-                            aria-label={`清除 ${label} 输入`}
+                            aria-label={`Clear ${label} input`}
                           >
                             <X className="h-3.5 w-3.5" />
                           </button>
@@ -587,20 +587,20 @@ export function AgentConfigTab({ visible }: AgentConfigTabProps) {
           </div>
         </div>
 
-        {/* 高级设置 */}
+        {/* Advanced settings */}
         <div className={cardClassName}>
           <details>
             <summary className="flex cursor-pointer select-none items-center gap-2 text-sm font-medium text-gray-400 transition-colors hover:text-gray-200">
               <SlidersHorizontal className="h-4 w-4" />
-              高级设置
+              Advanced Settings
             </summary>
             <div className="mt-4 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-200">
-                  会话清理延迟（秒）
+                  Session Cleanup Delay (seconds)
                 </label>
                 <p className="mt-0.5 text-xs text-gray-500">
-                  会话结束后等待此时间再释放资源，再次对话时会自动恢复
+                  Wait this long after a session ends before releasing resources. The session will resume automatically when the conversation continues.
                 </p>
                 <input
                   type="number"
@@ -614,10 +614,10 @@ export function AgentConfigTab({ visible }: AgentConfigTabProps) {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-200">
-                  最大并发会话数
+                  Maximum Concurrent Sessions
                 </label>
                 <p className="mt-0.5 text-xs text-gray-500">
-                  同时保持活跃的智能体会话上限，超出时自动释放最久未使用的会话（清理的会话会持久化，下次对话时恢复）
+                  Upper limit for simultaneously active agent sessions. When exceeded, the least recently used inactive session is released and restored when needed.
                 </p>
                 <input
                   type="number"

@@ -41,10 +41,10 @@ describe("CreateProjectModal", () => {
 
     renderModal();
 
-    const submitButton = screen.getByRole("button", { name: "创建项目" });
+    const submitButton = screen.getByRole("button", { name: "Create Project" });
     expect(submitButton).toBeDisabled();
 
-    fireEvent.change(screen.getByPlaceholderText("例如：重生之皇后威武"), {
+    fireEvent.change(screen.getByPlaceholderText("e.g. The Reborn Empress"), {
       target: { value: "演示项目" },
     });
 
@@ -73,7 +73,7 @@ describe("CreateProjectModal", () => {
 
     renderModal();
 
-    expect(screen.getByRole("button", { name: "创建项目" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Create Project" })).toBeDisabled();
     expect(API.createProject).not.toHaveBeenCalled();
   });
 });

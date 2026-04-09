@@ -39,10 +39,10 @@ vi.mock("./ExportScopeDialog", () => ({
     open ? (
       <div data-testid="export-scope-dialog">
         <button data-testid="scope-current" onClick={() => onSelect("current")}>
-          仅当前版本
+          Current version
         </button>
         <button data-testid="scope-full" onClick={() => onSelect("full")}>
-          全部数据
+          Full export
         </button>
       </div>
     ) : null,
@@ -111,7 +111,7 @@ describe("GlobalHeader", () => {
     });
 
     useAppStore.getState().pushWorkspaceNotification({
-      text: "AI 刚更新了线索「玉佩」，点击查看",
+      text: "AI just updated clue \"Jade Pendant\". Click to view.",
       target: {
         type: "clue",
         id: "玉佩",
@@ -162,7 +162,7 @@ describe("GlobalHeader", () => {
     // Click export button to open dialog
     screen.getByRole("button", { name: "Export current project ZIP" }).click();
 
-    // Wait for dialog to appear then click "仅当前版本"
+    // Wait for dialog to appear then click "Current version"
     const scopeBtn = await screen.findByTestId("scope-current");
     scopeBtn.click();
 
