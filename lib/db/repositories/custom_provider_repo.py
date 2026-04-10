@@ -9,7 +9,7 @@ from lib.db.repositories.base import BaseRepository
 
 
 class CustomProviderRepository(BaseRepository):
-    """自定义供应商 + 模型 CRUD。"""
+    """CRUD repository for custom providers and their models."""
 
     # ── Provider CRUD ──────────────────────────────────────────────
 
@@ -21,7 +21,7 @@ class CustomProviderRepository(BaseRepository):
         api_key: str,
         models: list[dict] | None = None,
     ) -> CustomProvider:
-        """创建供应商，可选同时创建模型列表。"""
+        """Create a provider and optionally create its model list in the same call."""
         provider = CustomProvider(
             display_name=display_name,
             api_format=api_format,
@@ -29,7 +29,7 @@ class CustomProviderRepository(BaseRepository):
             api_key=api_key,
         )
         self.session.add(provider)
-        await self.session.flush()  # 获取 provider.id
+        await self.session.flush()  # Populate ``provider.id``.
 
         if models:
             for m in models:
@@ -50,7 +50,7 @@ class CustomProviderRepository(BaseRepository):
         return list(result.scalars())
 
     async def update_provider(self, provider_id: int, **kwargs) -> CustomProvider | None:
-        """更新供应商字段。返回更新后的对象，若不存在返回 None。"""
+        """Update provider fields and return the updated object, or ``None`` if missing."""
         provider = await self.get_provider(provider_id)
         if provider is None:
             return None
@@ -59,9 +59,10 @@ class CustomProviderRepository(BaseRepository):
         return provider
 
     async def delete_provider(self, provider_id: int) -> None:
-        """删除供应商及其所有模型。
+        """Delete a provider and all of its models.
 
-        显式删除模型而非依赖 FK CASCADE，因为 SQLite 默认不启用 foreign_keys pragma。
+        Models are deleted explicitly instead of relying on FK cascade because
+        SQLite does not enable ``foreign_keys`` by default.
         """
         await self.session.execute(delete(CustomProviderModel).where(CustomProviderModel.provider_id == provider_id))
         await self.session.execute(delete(CustomProvider).where(CustomProvider.id == provider_id))
@@ -79,7 +80,7 @@ class CustomProviderRepository(BaseRepository):
         return list(result.scalars())
 
     async def replace_models(self, provider_id: int, models: list[dict]) -> list[CustomProviderModel]:
-        """删除旧模型，插入新列表。返回新创建的模型。"""
+        """Replace all existing models for a provider and return the new rows."""
         await self.session.execute(delete(CustomProviderModel).where(CustomProviderModel.provider_id == provider_id))
         new_models = []
         for m in models:
@@ -90,7 +91,7 @@ class CustomProviderRepository(BaseRepository):
         return new_models
 
     async def update_model(self, model_id: int, **kwargs) -> CustomProviderModel | None:
-        """更新模型字段。返回更新后的对象，若不存在返回 None。"""
+        """Update model fields and return the updated object, or ``None`` if missing."""
         stmt = select(CustomProviderModel).where(CustomProviderModel.id == model_id)
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
@@ -101,12 +102,12 @@ class CustomProviderRepository(BaseRepository):
         return model
 
     async def delete_model(self, model_id: int) -> None:
-        """删除单个模型。"""
+        """Delete a single model."""
         await self.session.execute(delete(CustomProviderModel).where(CustomProviderModel.id == model_id))
         await self.session.flush()
 
     async def list_all_enabled_models(self) -> list[CustomProviderModel]:
-        """跨所有供应商获取全部已启用模型。"""
+        """Return all enabled models across every provider."""
         stmt = (
             select(CustomProviderModel)
             .where(CustomProviderModel.is_enabled == True)  # noqa: E712
@@ -116,7 +117,7 @@ class CustomProviderRepository(BaseRepository):
         return list(result.scalars())
 
     async def list_providers_with_models(self) -> list[tuple[CustomProvider, list[CustomProviderModel]]]:
-        """获取所有供应商及其模型，仅 2 次查询。"""
+        """Return all providers with their models using only two queries."""
         providers = await self.list_providers()
         if not providers:
             return []
@@ -135,7 +136,7 @@ class CustomProviderRepository(BaseRepository):
         return [(p, models_by_provider.get(p.id, [])) for p in providers]
 
     async def list_enabled_models_by_media_type(self, media_type: str) -> list[CustomProviderModel]:
-        """跨所有供应商获取指定媒体类型的已启用模型。"""
+        """Return all enabled models of a given media type across all providers."""
         stmt = (
             select(CustomProviderModel)
             .where(
@@ -148,7 +149,7 @@ class CustomProviderRepository(BaseRepository):
         return list(result.scalars())
 
     async def get_model_by_ids(self, provider_id: int, model_id: str) -> CustomProviderModel | None:
-        """根据供应商 ID 和模型 ID 获取模型。"""
+        """Look up a model by provider ID and model ID."""
         stmt = select(CustomProviderModel).where(
             CustomProviderModel.provider_id == provider_id,
             CustomProviderModel.model_id == model_id,
@@ -157,7 +158,7 @@ class CustomProviderRepository(BaseRepository):
         return result.scalar_one_or_none()
 
     async def get_default_model(self, provider_id: int, media_type: str) -> CustomProviderModel | None:
-        """获取指定供应商 + 媒体类型的默认已启用模型。"""
+        """Return the default enabled model for a provider and media type."""
         stmt = select(CustomProviderModel).where(
             CustomProviderModel.provider_id == provider_id,
             CustomProviderModel.media_type == media_type,

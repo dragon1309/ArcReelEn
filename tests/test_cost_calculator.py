@@ -6,33 +6,33 @@ from lib.cost_calculator import CostCalculator, cost_calculator
 class TestCostCalculator:
     def test_calculate_image_cost_known_and_default(self):
         calculator = CostCalculator()
-        # 默认模型 (gemini-3.1-flash-image-preview)
+        # Default model (gemini-3.1-flash-image-preview)
         assert calculator.calculate_image_cost("1k") == 0.067
         assert calculator.calculate_image_cost("2K") == 0.101
         assert calculator.calculate_image_cost("4K") == 0.151
         assert calculator.calculate_image_cost("unknown") == 0.067
-        # 指定旧模型 (gemini-3-pro-image-preview)
+        # Explicit older model (gemini-3-pro-image-preview)
         assert calculator.calculate_image_cost("1k", model="gemini-3-pro-image-preview") == 0.134
         assert calculator.calculate_image_cost("2K", model="gemini-3-pro-image-preview") == 0.134
 
     def test_calculate_video_cost_known_and_default(self):
         calculator = CostCalculator()
-        # 默认模型 (veo-3.1-lite-generate-preview)
+        # Default model (veo-3.1-lite-generate-preview)
         assert calculator.calculate_video_cost(8, "1080p", True) == pytest.approx(0.64)
         assert calculator.calculate_video_cost(8, "1080p", False) == pytest.approx(0.64)
         assert calculator.calculate_video_cost(8, "720p", True) == pytest.approx(0.40)
         assert calculator.calculate_video_cost(8, "720p", False) == pytest.approx(0.40)
-        # Lite 不支持 4K，未知分辨率回退到 1080p+audio 费率 (0.08)
+        # Lite does not support 4K; unknown resolution falls back to 1080p+audio pricing (0.08)
         assert calculator.calculate_video_cost(5, "unknown", True) == pytest.approx(0.40)
-        # Fast 模型 (veo-3.1-fast-generate-001)
+        # Fast model (veo-3.1-fast-generate-001)
         fast = "veo-3.1-fast-generate-001"
         assert calculator.calculate_video_cost(8, "1080p", True, model=fast) == pytest.approx(1.2)
         assert calculator.calculate_video_cost(8, "1080p", False, model=fast) == pytest.approx(0.8)
         assert calculator.calculate_video_cost(6, "4k", True, model=fast) == pytest.approx(2.1)
         assert calculator.calculate_video_cost(6, "4k", False, model=fast) == pytest.approx(1.8)
-        # Fast 模型未知分辨率应回退到自身的 1080p+audio 费率 (0.15)，而非标准模型的 0.40
+        # Unknown resolution should fall back to the fast model's own 1080p+audio rate (0.15), not the standard 0.40
         assert calculator.calculate_video_cost(5, "unknown", True, model=fast) == pytest.approx(0.75)
-        # 历史兼容：preview 模型费率与 001 相同
+        # Historical compatibility: preview models keep the same pricing as 001
         preview = "veo-3.1-generate-preview"
         assert calculator.calculate_video_cost(8, "1080p", True, model=preview) == pytest.approx(3.2)
         assert calculator.calculate_video_cost(8, "1080p", False, model=preview) == pytest.approx(1.6)

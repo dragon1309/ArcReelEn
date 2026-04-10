@@ -1,4 +1,4 @@
-"""URL 归一化工具函数。"""
+"""Utility helpers for normalizing provider base URLs."""
 
 from __future__ import annotations
 
@@ -6,11 +6,7 @@ import re
 
 
 def ensure_openai_base_url(url: str | None) -> str | None:
-    """自动补全 OpenAI 兼容 API 的 /v1 路径后缀。
-
-    用户可能只填了 ``https://api.example.com``，但 OpenAI SDK 期望
-    ``https://api.example.com/v1``。本函数在缺少版本路径时自动追加。
-    """
+    """Append the ``/v1`` suffix for OpenAI-compatible APIs when missing."""
     if not url:
         return url
     stripped = url.strip().rstrip("/")
@@ -20,10 +16,10 @@ def ensure_openai_base_url(url: str | None) -> str | None:
 
 
 def normalize_base_url(url: str | None) -> str | None:
-    """确保 base_url 以 / 结尾。
+    """Ensure ``base_url`` ends with ``/``.
 
-    Google genai SDK 的 http_options.base_url 要求尾部带 /，
-    否则请求路径拼接会失败。预置 Gemini 后端使用此函数。
+    Google GenAI SDK ``http_options.base_url`` expects a trailing slash, or URL
+    path joining can fail.
     """
     if not url:
         return None
@@ -36,13 +32,14 @@ def normalize_base_url(url: str | None) -> str | None:
 
 
 def ensure_google_base_url(url: str | None) -> str | None:
-    """规范化 Google genai SDK 的 base_url。
+    """Normalize a Google GenAI SDK ``base_url`` value.
 
-    Google genai SDK 会自动在 base_url 后拼接 ``api_version``（默认 ``v1beta``）。
-    如果用户误填了 ``https://example.com/v1beta``，SDK 会拼出
-    ``https://example.com/v1beta/v1beta/models``，导致请求失败。
+    The SDK appends ``api_version`` (``v1beta`` by default) automatically. If a
+    user enters ``https://example.com/v1beta`` directly, the SDK may build an
+    invalid URL like ``https://example.com/v1beta/v1beta/models``.
 
-    本函数剥离末尾的版本路径（如 ``/v1beta``、``/v1``），并确保尾部带 ``/``。
+    This helper strips any trailing version segment such as ``/v1beta`` or
+    ``/v1`` and then ensures the result ends with ``/``.
     """
     if not url:
         return None
@@ -50,7 +47,7 @@ def ensure_google_base_url(url: str | None) -> str | None:
     if not url:
         return None
     url = url.rstrip("/")
-    # 剥离末尾的版本路径（/v1, /v1beta, /v1alpha 等）
+    # Strip trailing version segments such as /v1, /v1beta, or /v1alpha.
     url = re.sub(r"/v\d+\w*$", "", url)
     if not url.endswith("/"):
         url += "/"

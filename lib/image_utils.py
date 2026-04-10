@@ -54,9 +54,10 @@ def compress_image_bytes(
     max_long_edge: int = _MAX_LONG_EDGE,
     quality: int = _JPEG_QUALITY,
 ) -> bytes:
-    """
-    将任意图片字节压缩为 JPEG：等比缩放到长边不超过 max_long_edge，
-    quality 控制 JPEG 压缩质量。
+    """Compress arbitrary image bytes into JPEG.
+
+    The image is scaled proportionally so the long edge does not exceed
+    ``max_long_edge``, and ``quality`` controls JPEG compression quality.
 
     Raises:
         ValueError: if the input bytes are not a valid image.

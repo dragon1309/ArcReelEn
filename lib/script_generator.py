@@ -1,8 +1,4 @@
-"""
-script_generator.py - 剧本生成器
-
-读取 Step 1/2 的 Markdown 中间文件，调用文本生成 Backend 生成最终 JSON 剧本
-"""
+"""Generate final JSON episode scripts from Step 1/2 Markdown drafts."""
 
 import json
 import logging
@@ -28,30 +24,26 @@ logger = logging.getLogger(__name__)
 
 
 class ScriptGenerator:
-    """
-    剧本生成器
-
-    读取 Step 1/2 的 Markdown 中间文件，调用 TextBackend 生成最终 JSON 剧本
-    """
+    """Generate final episode scripts with a ``TextBackend``."""
 
     def __init__(self, project_path: str | Path, generator: Optional["TextGenerator"] = None):
-        """
-        初始化生成器
+        """Initialize the generator.
 
         Args:
-            project_path: 项目目录路径，如 projects/test0205
-            generator: TextGenerator 实例（可选）。若为 None 则仅支持 build_prompt() dry-run。
+            project_path: project directory path, for example ``projects/test0205``
+            generator: optional ``TextGenerator`` instance; when omitted only
+                ``build_prompt()`` dry-run usage is supported
         """
         self.project_path = Path(project_path)
         self.generator = generator
 
-        # 加载 project.json
+        # Load project.json.
         self.project_json = self._load_project_json()
         self.content_mode = self.project_json.get("content_mode", "narration")
 
     @classmethod
     async def create(cls, project_path: str | Path) -> "ScriptGenerator":
-        """异步工厂方法，自动从 DB 加载供应商配置创建 TextGenerator。"""
+        """Create a generator with a DB-configured ``TextGenerator`` backend."""
         project_name = Path(project_path).name
         generator = await TextGenerator.create(TextTaskType.SCRIPT, project_name)
         return cls(project_path, generator)
@@ -61,27 +53,18 @@ class ScriptGenerator:
         episode: int,
         output_path: Path | None = None,
     ) -> Path:
-        """
-        异步生成剧集剧本
-
-        Args:
-            episode: 剧集编号
-            output_path: 输出路径，默认为 scripts/episode_{episode}.json
-
-        Returns:
-            生成的 JSON 文件路径
-        """
+        """Generate a JSON script for one episode and return its output path."""
         if self.generator is None:
-            raise RuntimeError("TextGenerator 未初始化，请使用 ScriptGenerator.create() 工厂方法")
+            raise RuntimeError("TextGenerator is not initialized. Use ScriptGenerator.create().")
 
-        # 1. 加载中间文件
+        # 1. Load intermediate draft files.
         step1_md = self._load_step1(episode)
 
-        # 2. 提取角色和线索（从 project.json）
+        # 2. Pull characters and clues from project.json.
         characters = self.project_json.get("characters", {})
         clues = self.project_json.get("clues", {})
 
-        # 3. 构建 Prompt
+        # 3. Build the prompt.
         if self.content_mode == "narration":
             prompt = build_narration_prompt(
                 project_overview=self.project_json.get("overview", {}),
@@ -109,8 +92,8 @@ class ScriptGenerator:
             )
             schema = DramaEpisodeScript
 
-        # 4. 调用 TextBackend
-        logger.info("正在生成第 %d 集剧本...", episode)
+        # 4. Call the text backend.
+        logger.info("Generating script for episode %d...", episode)
         project_name = self.project_path.name
         result = await self.generator.generate(
             TextGenerationRequest(prompt=prompt, response_schema=schema),
@@ -118,13 +101,13 @@ class ScriptGenerator:
         )
         response_text = result.text
 
-        # 5. 解析并验证响应
+        # 5. Parse and validate the response.
         script_data = self._parse_response(response_text, episode)
 
-        # 6. 补充元数据
+        # 6. Add metadata.
         script_data = self._add_metadata(script_data, episode)
 
-        # 7. 保存文件
+        # 7. Save the output file.
         if output_path is None:
             output_path = self.project_path / "scripts" / f"episode_{episode}.json"
 
@@ -132,19 +115,11 @@ class ScriptGenerator:
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(script_data, f, ensure_ascii=False, indent=2)
 
-        logger.info("剧本已保存至 %s", output_path)
+        logger.info("Saved script to %s", output_path)
         return output_path
 
     def build_prompt(self, episode: int) -> str:
-        """
-        构建 Prompt（用于 dry-run 模式）
-
-        Args:
-            episode: 剧集编号
-
-        Returns:
-            构建好的 Prompt 字符串
-        """
+        """Build the prompt string for dry-run usage."""
         step1_md = self._load_step1(episode)
         characters = self.project_json.get("characters", {})
         clues = self.project_json.get("clues", {})
@@ -175,7 +150,7 @@ class ScriptGenerator:
             )
 
     def _resolve_supported_durations(self) -> list[int] | None:
-        """从项目配置或 registry 解析当前视频模型支持的时长列表。"""
+        """Resolve supported video durations from project config or the registry."""
         durations = self.project_json.get("_supported_durations")
         if durations and isinstance(durations, list):
             return durations
@@ -190,22 +165,22 @@ class ScriptGenerator:
         return None
 
     def _resolve_aspect_ratio(self) -> str:
-        """解析项目的 aspect_ratio，向后兼容。"""
+        """Resolve the project's aspect ratio with backward compatibility."""
         if "aspect_ratio" in self.project_json and isinstance(self.project_json["aspect_ratio"], str):
             return self.project_json["aspect_ratio"]
         return "9:16" if self.content_mode == "narration" else "16:9"
 
     def _load_project_json(self) -> dict:
-        """加载 project.json"""
+        """Load ``project.json``."""
         path = self.project_path / "project.json"
         if not path.exists():
-            raise FileNotFoundError(f"未找到 project.json: {path}")
+            raise FileNotFoundError(f"project.json not found: {path}")
 
         with open(path, encoding="utf-8") as f:
             return json.load(f)
 
     def _load_step1(self, episode: int) -> str:
-        """加载 Step 1 的 Markdown 文件，支持两种文件命名"""
+        """Load the Step 1 Markdown file, supporting both legacy filenames."""
         drafts_path = self.project_path / "drafts" / f"episode_{episode}"
         if self.content_mode == "narration":
             primary_path = drafts_path / "step1_segments.md"
@@ -216,26 +191,17 @@ class ScriptGenerator:
 
         if not primary_path.exists():
             if fallback_path.exists():
-                logger.warning("未找到 Step 1 文件: %s，改用 %s", primary_path, fallback_path)
+                logger.warning("Step 1 file not found at %s; falling back to %s", primary_path, fallback_path)
                 primary_path = fallback_path
             else:
-                raise FileNotFoundError(f"未找到 Step 1 文件: {primary_path}")
+                raise FileNotFoundError(f"Step 1 file not found: {primary_path}")
 
         with open(primary_path, encoding="utf-8") as f:
             return f.read()
 
     def _parse_response(self, response_text: str, episode: int) -> dict:
-        """
-        解析并验证 TextBackend 响应
-
-        Args:
-            response_text: API 返回的 JSON 文本
-            episode: 剧集编号
-
-        Returns:
-            验证后的剧本数据字典
-        """
-        # 清理可能的 markdown 包装
+        """Parse and validate the ``TextBackend`` JSON response."""
+        # Strip optional Markdown fencing.
         text = response_text.strip()
         if text.startswith("```json"):
             text = text[7:]
@@ -245,13 +211,13 @@ class ScriptGenerator:
             text = text[:-3]
         text = text.strip()
 
-        # 解析 JSON
+        # Parse JSON.
         try:
             data = json.loads(text)
         except json.JSONDecodeError as e:
-            raise ValueError(f"JSON 解析失败: {e}")
+            raise ValueError(f"Failed to parse JSON: {e}")
 
-        # Pydantic 验证
+        # Validate with Pydantic.
         try:
             if self.content_mode == "narration":
                 validated = NarrationEpisodeScript.model_validate(data)
@@ -259,44 +225,35 @@ class ScriptGenerator:
                 validated = DramaEpisodeScript.model_validate(data)
             return validated.model_dump()
         except ValidationError as e:
-            logger.warning("数据验证警告: %s", e)
-            # 返回原始数据，允许部分不符合 schema
+            logger.warning("Schema validation warning: %s", e)
+            # Return the raw data so partially valid payloads can still surface.
             return data
 
     def _add_metadata(self, script_data: dict, episode: int) -> dict:
-        """
-        补充剧本元数据
-
-        Args:
-            script_data: 剧本数据
-            episode: 剧集编号
-
-        Returns:
-            补充元数据后的剧本数据
-        """
-        # 确保基本字段存在
+        """Add derived metadata fields to the generated script payload."""
+        # Ensure required base fields exist.
         script_data.setdefault("episode", episode)
         script_data.setdefault("content_mode", self.content_mode)
 
-        # 添加小说信息
+        # Add novel metadata.
         if "novel" not in script_data:
             script_data["novel"] = {
                 "title": self.project_json.get("title", ""),
-                "chapter": f"第{episode}集",
+                "chapter": f"Episode {episode}",
             }
-        # 剥离已废弃的 source_file（AI 可能虚构）
+        # Strip deprecated source_file if the model hallucinated it.
         novel = script_data.get("novel")
         if isinstance(novel, dict):
             novel.pop("source_file", None)
 
-        # 添加时间戳
+        # Add timestamps.
         now = datetime.now().isoformat()
         script_data.setdefault("metadata", {})
         script_data["metadata"]["created_at"] = now
         script_data["metadata"]["updated_at"] = now
         script_data["metadata"]["generator"] = self.generator.model if self.generator else "unknown"
 
-        # 计算统计信息 + 聚合 episode 级角色/线索（从 segment/scene 中收集）
+        # Compute summary metadata and aggregate episode-level characters/clues.
         if self.content_mode == "narration":
             segments = script_data.get("segments", [])
             script_data["metadata"]["total_segments"] = len(segments)

@@ -1,16 +1,16 @@
-"""资产文件指纹计算 — 基于 mtime 的内容寻址缓存支持"""
+"""Asset fingerprint computation based on mtime for cache-busting support."""
 
 from pathlib import Path
 
-# 扫描的媒体子目录
+# Media subdirectories to scan.
 _MEDIA_SUBDIRS = ("storyboards", "videos", "thumbnails", "characters", "clues")
 
-# 根目录下的已知媒体文件（如风格参考图）
+# Known media files that may live at the project root (for example style references).
 _ROOT_MEDIA_SUFFIXES = frozenset((".png", ".jpg", ".jpeg", ".webp", ".mp4"))
 
 
 def _scan_subdir(prefix: str, dir_path: Path, fingerprints: dict[str, int]) -> None:
-    """扫描单个媒体子目录及其一级子目录（跳过 versions/ 目录）。"""
+    """Scan one media subdirectory and its first-level children, skipping ``versions/``."""
     for entry in dir_path.iterdir():
         if entry.is_file():
             fingerprints[f"{prefix}/{entry.name}"] = entry.stat().st_mtime_ns
@@ -22,11 +22,10 @@ def _scan_subdir(prefix: str, dir_path: Path, fingerprints: dict[str, int]) -> N
 
 
 def compute_asset_fingerprints(project_path: Path) -> dict[str, int]:
-    """
-    扫描项目目录下所有媒体文件，返回 {相对路径: mtime_ns_int} 映射。
+    """Scan project media files and return ``{relative_path: mtime_ns}``.
 
-    mtime_ns 为纳秒级整数，用作 URL cache-bust 参数，精度高于秒级。
-    对约 50 个文件，耗时 <1ms（仅读文件系统元数据）。
+    ``mtime_ns`` is used as a high-precision cache-busting token for asset URLs.
+    The scan reads only filesystem metadata and is typically very fast.
     """
     fingerprints: dict[str, int] = {}
 
@@ -35,7 +34,7 @@ def compute_asset_fingerprints(project_path: Path) -> dict[str, int]:
         if dir_path.is_dir():
             _scan_subdir(subdir, dir_path, fingerprints)
 
-    # 根目录下的媒体文件（如 style_reference.png）
+    # Root-level media files such as ``style_reference.png``.
     for f in project_path.iterdir():
         if f.is_file() and f.suffix.lower() in _ROOT_MEDIA_SUFFIXES:
             fingerprints[f.name] = f.stat().st_mtime_ns

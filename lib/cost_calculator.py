@@ -1,9 +1,4 @@
-"""
-费用计算器
-
-基于 docs/视频&图片生成费用表.md 中的费用规则，计算图片和视频生成的费用。
-支持按模型区分费用，以便不同模型的历史数据能正确计费。
-"""
+"""Cost calculator for text, image, and video generation across providers."""
 
 from __future__ import annotations
 
@@ -12,9 +7,9 @@ from lib.providers import PROVIDER_ARK, PROVIDER_GROK, PROVIDER_OPENAI, CallType
 
 
 class CostCalculator:
-    """费用计算器"""
+    """Centralized cost calculator."""
 
-    # 图片费用（美元/张），按模型和分辨率区分
+    # Image pricing (USD per image), keyed by model and effective resolution tier.
     IMAGE_COST = {
         "gemini-3-pro-image-preview": {
             "1K": 0.134,
@@ -31,8 +26,8 @@ class CostCalculator:
 
     DEFAULT_IMAGE_MODEL = "gemini-3.1-flash-image-preview"
 
-    # 视频费用（美元/秒），按模型区分
-    # 格式：model -> {(resolution, generate_audio): cost_per_second}
+    # Video pricing (USD per second), keyed by model.
+    # Format: model -> {(resolution, generate_audio): cost_per_second}
     VIDEO_COST = {
         "veo-3.1-generate-001": {
             ("720p", True): 0.40,
@@ -50,7 +45,7 @@ class CostCalculator:
             ("4k", True): 0.35,
             ("4k", False): 0.30,
         },
-        # 历史兼容：preview 模型已下线，保留费率供历史计费使用
+        # Historical compatibility: preview models are retired but retained for old usage records.
         "veo-3.1-generate-preview": {
             ("720p", True): 0.40,
             ("720p", False): 0.20,
@@ -83,7 +78,7 @@ class CostCalculator:
 
     DEFAULT_VIDEO_MODEL = "veo-3.1-lite-generate-preview"
 
-    # Ark 视频费用（元/百万 token），按 (service_tier, generate_audio) 查表
+    # Ark video pricing (CNY per million tokens), keyed by (service_tier, generate_audio).
     ARK_VIDEO_COST = {
         "doubao-seedance-1-5-pro-251215": {
             ("default", True): 16.00,
@@ -103,15 +98,15 @@ class CostCalculator:
 
     DEFAULT_ARK_VIDEO_MODEL = "doubao-seedance-1-5-pro-251215"
 
-    # Grok 视频费用（美元/秒），不区分分辨率
-    # 来源：docs/grok-docs/models.md — $0.050/sec
+    # Grok video pricing (USD per second), resolution-independent.
+    # Source: docs/grok-docs/models.md - $0.050/sec
     GROK_VIDEO_COST = {
         "grok-imagine-video": 0.050,
     }
 
     DEFAULT_GROK_MODEL = "grok-imagine-video"
 
-    # Ark 图片费用（元/张）
+    # Ark image pricing (CNY per image).
     ARK_IMAGE_COST = {
         "doubao-seedream-5-0-260128": 0.22,
         "doubao-seedream-5-0-lite-260128": 0.22,
@@ -120,36 +115,36 @@ class CostCalculator:
     }
     DEFAULT_ARK_IMAGE_MODEL = "doubao-seedream-5-0-lite-260128"
 
-    # Grok 图片费用（美元/张）
+    # Grok image pricing (USD per image).
     GROK_IMAGE_COST = {
         "grok-imagine-image": 0.02,
         "grok-imagine-image-pro": 0.07,
     }
     DEFAULT_GROK_IMAGE_MODEL = "grok-imagine-image"
 
-    # Gemini 文本 token 费率（美元/百万 token）
+    # Gemini text token rates (USD per million tokens).
     GEMINI_TEXT_COST = {
         "gemini-3-flash-preview": {"input": 0.10, "output": 0.40},
     }
 
-    # Ark 文本 token 费率（元/百万 token）
+    # Ark text token rates (CNY per million tokens).
     ARK_TEXT_COST = {
         "doubao-seed-2-0-lite-260215": {"input": 0.30, "output": 0.60},
     }
 
-    # Grok 文本 token 费率（美元/百万 token）
+    # Grok text token rates (USD per million tokens).
     GROK_TEXT_COST = {
         "grok-4-1-fast-reasoning": {"input": 2.00, "output": 10.00},
     }
 
-    # OpenAI 文本 token 费率（美元/百万 token）
+    # OpenAI text token rates (USD per million tokens).
     OPENAI_TEXT_COST = {
         "gpt-5.4": {"input": 2.50, "output": 15.00},
         "gpt-5.4-mini": {"input": 0.75, "output": 4.50},
         "gpt-5.4-nano": {"input": 0.20, "output": 1.25},
     }
-    # OpenAI 图片费用（美元/张），按 (quality, size) 二维查表
-    # 来源：https://platform.openai.com/docs/pricing — GPT Image
+    # OpenAI image pricing (USD per image), keyed by (quality, size).
+    # Source: https://platform.openai.com/docs/pricing - GPT Image
     OPENAI_IMAGE_COST: dict[str, dict[tuple[str, str], float]] = {
         "gpt-image-1.5": {
             ("low", "1024x1024"): 0.009,
@@ -188,12 +183,7 @@ class CostCalculator:
         generate_audio: bool = True,
         model: str | None = None,
     ) -> tuple[float, str]:
-        """
-        计算 Ark 视频生成费用。
-
-        Returns:
-            (amount, currency) — 金额和币种 (CNY)
-        """
+        """Calculate Ark video-generation cost and return ``(amount, currency)``."""
         model = model or self.DEFAULT_ARK_VIDEO_MODEL
         model_costs = self.ARK_VIDEO_COST.get(model, self.ARK_VIDEO_COST[self.DEFAULT_ARK_VIDEO_MODEL])
         key = (service_tier, generate_audio)
@@ -205,16 +195,7 @@ class CostCalculator:
         return amount, "CNY"
 
     def calculate_image_cost(self, resolution: str = "1K", model: str = None) -> float:
-        """
-        计算图片生成费用
-
-        Args:
-            resolution: 图片分辨率 ('512PX', '1K', '2K', '4K')
-            model: 模型名称，默认使用当前默认模型
-
-        Returns:
-            费用（美元）
-        """
+        """Calculate generic image-generation cost in USD."""
         model = model or self.DEFAULT_IMAGE_MODEL
         model_costs = self.IMAGE_COST.get(model, self.IMAGE_COST[self.DEFAULT_IMAGE_MODEL])
         default_cost = model_costs.get("1K") or self.IMAGE_COST[self.DEFAULT_IMAGE_MODEL]["1K"]
@@ -227,18 +208,7 @@ class CostCalculator:
         generate_audio: bool = True,
         model: str = None,
     ) -> float:
-        """
-        计算视频生成费用
-
-        Args:
-            duration_seconds: 视频时长（秒）
-            resolution: 分辨率 ('720p', '1080p', '4k')
-            generate_audio: 是否生成音频
-            model: 模型名称，默认使用当前默认模型
-
-        Returns:
-            费用（美元）
-        """
+        """Calculate generic video-generation cost in USD."""
         model = model or self.DEFAULT_VIDEO_MODEL
         model_costs = self.VIDEO_COST.get(model, self.VIDEO_COST[self.DEFAULT_VIDEO_MODEL])
         resolution = resolution.lower()
@@ -253,12 +223,7 @@ class CostCalculator:
         model: str | None = None,
         n: int = 1,
     ) -> tuple[float, str]:
-        """
-        Ark 图片按张计费。
-
-        Returns:
-            (amount, currency) — 金额和币种 (CNY)
-        """
+        """Calculate Ark image cost and return ``(amount, currency)``."""
         model = model or self.DEFAULT_ARK_IMAGE_MODEL
         per_image = self.ARK_IMAGE_COST.get(model, self.ARK_IMAGE_COST[self.DEFAULT_ARK_IMAGE_MODEL])
         return per_image * n, "CNY"
@@ -268,12 +233,7 @@ class CostCalculator:
         model: str | None = None,
         n: int = 1,
     ) -> tuple[float, str]:
-        """
-        Grok 图片按张计费。
-
-        Returns:
-            (amount, currency) — 金额和币种 (USD)
-        """
+        """Calculate Grok image cost and return ``(amount, currency)``."""
         model = model or self.DEFAULT_GROK_IMAGE_MODEL
         per_image = self.GROK_IMAGE_COST.get(model, self.GROK_IMAGE_COST[self.DEFAULT_GROK_IMAGE_MODEL])
         return per_image * n, "USD"
@@ -283,16 +243,7 @@ class CostCalculator:
         duration_seconds: int,
         model: str | None = None,
     ) -> tuple[float, str]:
-        """
-        计算 Grok 视频生成费用。
-
-        Args:
-            duration_seconds: 视频时长（秒）
-            model: 模型名称
-
-        Returns:
-            (amount, currency) — 金额和币种 (USD)
-        """
+        """Calculate Grok video cost and return ``(amount, currency)``."""
         model = model or self.DEFAULT_GROK_MODEL
         per_second = self.GROK_VIDEO_COST.get(model, self.GROK_VIDEO_COST[self.DEFAULT_GROK_MODEL])
         return duration_seconds * per_second, "USD"
@@ -303,12 +254,7 @@ class CostCalculator:
         quality: str | None = None,
         size: str | None = None,
     ) -> tuple[float, str]:
-        """
-        OpenAI 图片按 (quality, size) 计费。
-
-        Returns:
-            (amount, currency) — 金额和币种 (USD)
-        """
+        """Calculate OpenAI image cost and return ``(amount, currency)``."""
         model = model or self.DEFAULT_OPENAI_IMAGE_MODEL
         quality = quality or "medium"
         size = size or "1024x1024"
@@ -324,12 +270,7 @@ class CostCalculator:
         model: str | None = None,
         resolution: str | None = None,
     ) -> tuple[float, str]:
-        """
-        计算 OpenAI 视频生成费用（按秒计费）。
-
-        Returns:
-            (amount, currency) — 金额和币种 (USD)
-        """
+        """Calculate OpenAI video cost and return ``(amount, currency)``."""
         model = model or self.DEFAULT_OPENAI_VIDEO_MODEL
         resolution = resolution or "720p"
         model_costs = self.OPENAI_VIDEO_COST.get(model, self.OPENAI_VIDEO_COST[self.DEFAULT_OPENAI_VIDEO_MODEL])
@@ -351,7 +292,7 @@ class CostCalculator:
         provider: str,
         model: str | None = None,
     ) -> tuple[float, str]:
-        """计算文本生成费用。返回 (amount, currency)。"""
+        """Calculate text-generation cost and return ``(amount, currency)``."""
         table_attr, default_model, currency = self._TEXT_COST_TABLES.get(provider, self._TEXT_COST_DEFAULT)
         cost_table = getattr(self, table_attr)
         model = model or default_model
@@ -378,9 +319,10 @@ class CostCalculator:
         custom_price_output: float | None = None,
         custom_currency: str | None = None,
     ) -> tuple[float, str]:
-        """统一费用计算入口。按 (call_type, provider) 显式路由。返回 (amount, currency)。
+        """Unified cost-calculation entrypoint returning ``(amount, currency)``.
 
-        自定义供应商的价格信息通过 custom_price_* 参数传入（调用方需预先查询 DB）。
+        Custom-provider prices are passed in through ``custom_price_*`` values
+        after the caller looks them up from the database.
         """
         if is_custom_provider(provider):
             return self._calculate_custom_cost(
@@ -451,7 +393,7 @@ class CostCalculator:
         output_tokens: int | None = None,
         duration_seconds: int | None = None,
     ) -> tuple[float, str]:
-        """根据调用方预查的价格信息计算自定义供应商费用。"""
+        """Calculate custom-provider cost from caller-supplied price metadata."""
         if price_input is None:
             return 0.0, "USD"
 
@@ -468,5 +410,5 @@ class CostCalculator:
         return 0.0, cur
 
 
-# 单例实例，方便使用
+# Shared singleton instance.
 cost_calculator = CostCalculator()

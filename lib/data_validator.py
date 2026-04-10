@@ -619,7 +619,7 @@ class DataValidator:
                 if self._is_hidden_path(Path(child.name)):
                     continue
                 if child.name not in self.ALLOWED_ROOT_ENTRIES:
-                    warnings.append(f"发现未识别的附加文件/目录: {child.name}")
+                    warnings.append(f"Found unrecognized extra file or directory: {child.name}")
 
         return ValidationResult(valid=len(errors) == 0, errors=errors, warnings=warnings)
 
@@ -628,7 +628,7 @@ def validate_project(
     project_name: str,
     projects_root: str | None = None,
 ) -> ValidationResult:
-    """验证 project.json"""
+    """Validate ``project.json``."""
     validator = DataValidator(projects_root)
     return validator.validate_project(project_name)
 
@@ -638,7 +638,7 @@ def validate_episode(
     episode_file: str,
     projects_root: str | None = None,
 ) -> ValidationResult:
-    """验证 episode JSON"""
+    """Validate an episode JSON file."""
     validator = DataValidator(projects_root)
     return validator.validate_episode(project_name, episode_file)
 
@@ -647,9 +647,9 @@ if __name__ == "__main__":
     import sys
 
     if len(sys.argv) < 2:
-        print("用法: python data_validator.py <project_name> [episode_file]")
-        print("  验证 project.json: python data_validator.py my_project")
-        print("  验证 episode JSON: python data_validator.py my_project episode_1.json")
+        print("Usage: python data_validator.py <project_name> [episode_file]")
+        print("  Validate project.json: python data_validator.py my_project")
+        print("  Validate episode JSON: python data_validator.py my_project episode_1.json")
         sys.exit(1)
 
     project_name = sys.argv[1]
@@ -657,10 +657,10 @@ if __name__ == "__main__":
     if len(sys.argv) >= 3:
         episode_file = sys.argv[2]
         result = validate_episode(project_name, episode_file)
-        print(f"验证 {project_name}/scripts/{episode_file}:")
+        print(f"Validating {project_name}/scripts/{episode_file}:")
     else:
         result = validate_project(project_name)
-        print(f"验证 {project_name}/project.json:")
+        print(f"Validating {project_name}/project.json:")
 
     print(result)
     sys.exit(0 if result.valid else 1)

@@ -178,17 +178,17 @@ class TestProjectManagerMore:
         loaded1 = pm.load_script("demo", "episode_1.json")
         assert loaded1["episode"] == 1
 
-        # 带 scripts/ 前缀（前端传入的格式）
+        # With a ``scripts/`` prefix, as sent by the frontend.
         loaded2 = pm.load_script("demo", "scripts/episode_1.json")
         assert loaded2["episode"] == 1
 
-        # save_script 也应兼容带前缀的文件名
-        script["title"] = "修改后"
+        # save_script should also accept the prefixed filename.
+        script["title"] = "Updated"
         pm.save_script("demo", script, "scripts/episode_1.json")
         loaded3 = pm.load_script("demo", "episode_1.json")
-        assert loaded3["title"] == "修改后"
+        assert loaded3["title"] == "Updated"
 
-        # update_scene_asset 也应兼容
+        # update_scene_asset should also accept the prefixed filename.
         pm.update_scene_asset(
             "demo", "scripts/episode_1.json", "E1S01", "storyboard_image", "storyboards/scene_E1S01.png"
         )
@@ -236,23 +236,23 @@ class TestProjectManagerMore:
         pm.update_character_reference_image("demo", "Alice", "characters/refs/Alice.png")
         assert pm.get_project_character("demo", "Alice")["reference_image"].endswith("Alice.png")
 
-        pm.add_clues_batch("demo", {"玉佩": {"type": "prop", "description": "d", "importance": "major"}})
-        pm.update_clue_sheet("demo", "玉佩", "clues/玉佩.png")
-        assert pm.get_clue("demo", "玉佩")["clue_sheet"].endswith("玉佩.png")
+        pm.add_clues_batch("demo", {"Jade Pendant": {"type": "prop", "description": "d", "importance": "major"}})
+        pm.update_clue_sheet("demo", "Jade Pendant", "clues/jade-pendant.png")
+        assert pm.get_clue("demo", "Jade Pendant")["clue_sheet"].endswith("jade-pendant.png")
 
         project_dir = pm.get_project_path("demo")
-        (project_dir / "clues" / "玉佩.png").write_bytes(b"png")
+        (project_dir / "clues" / "jade-pendant.png").write_bytes(b"png")
         assert pm.get_pending_clues("demo") == []
 
         # direct add_* return bool
         assert pm.add_character("demo", "Bob", "side", "") is True
         assert pm.add_character("demo", "Bob", "side", "") is False
-        assert pm.add_clue("demo", "线索X", "prop", "desc", "minor") is True
-        assert pm.add_clue("demo", "线索X", "prop", "desc", "minor") is False
+        assert pm.add_clue("demo", "Clue X", "prop", "desc", "minor") is True
+        assert pm.add_clue("demo", "Clue X", "prop", "desc", "minor") is False
 
         added_chars = pm.add_characters_batch("demo", {"Bob": {"description": "d"}, "C": {"description": "d"}})
         assert added_chars == 1
-        added_clues = pm.add_clues_batch("demo", {"线索X": {"type": "prop"}, "线索Y": {"type": "location"}})
+        added_clues = pm.add_clues_batch("demo", {"Clue X": {"type": "prop"}, "Clue Y": {"type": "location"}})
         assert added_clues == 1
 
         pm.add_episode("demo", 1, "第一集", "scripts/episode_1.json")

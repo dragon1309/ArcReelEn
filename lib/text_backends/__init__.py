@@ -1,4 +1,4 @@
-"""文本生成服务层公共 API。"""
+"""Public API exports for the text-generation service layer."""
 
 from lib.text_backends.base import (
     ImageInput,

@@ -1,4 +1,4 @@
-"""Instructor 降级支持 — 为不支持原生结构化输出的模型提供 prompt 注入 + 解析 + 重试。"""
+"""Instructor fallback helpers for models without native structured output."""
 
 from __future__ import annotations
 
@@ -21,15 +21,12 @@ def generate_structured_via_instructor(
     mode: Mode = Mode.MD_JSON,
     max_retries: int = 2,
 ) -> tuple[str, int | None, int | None]:
-    """通过 Instructor 生成结构化输出（同步版，供 Ark 等同步 SDK 使用）。
-
-    返回 (json_text, input_tokens, output_tokens)。
-    """
+    """Generate structured output through Instructor using a sync client."""
     patched = instructor.from_openai(client, mode=mode)
     if patched is None:
         raise TypeError(
-            f"instructor.from_openai() 返回 None — client 类型 {type(client).__name__} 不受支持，"
-            "请传入 openai.OpenAI 或 openai.AsyncOpenAI 实例"
+            f"instructor.from_openai() returned None; client type {type(client).__name__} is unsupported. "
+            "Pass an openai.OpenAI or openai.AsyncOpenAI instance."
         )
     result, completion = patched.chat.completions.create_with_completion(
         model=model,
@@ -56,15 +53,12 @@ async def generate_structured_via_instructor_async(
     mode: Mode = Mode.MD_JSON,
     max_retries: int = 2,
 ) -> tuple[str, int | None, int | None]:
-    """通过 Instructor 生成结构化输出（异步版，供 OpenAI AsyncOpenAI 使用）。
-
-    返回 (json_text, input_tokens, output_tokens)。
-    """
+    """Generate structured output through Instructor using an async client."""
     patched = instructor.from_openai(client, mode=mode)
     if patched is None:
         raise TypeError(
-            f"instructor.from_openai() 返回 None — client 类型 {type(client).__name__} 不受支持，"
-            "请传入 openai.OpenAI 或 openai.AsyncOpenAI 实例"
+            f"instructor.from_openai() returned None; client type {type(client).__name__} is unsupported. "
+            "Pass an openai.OpenAI or openai.AsyncOpenAI instance."
         )
     result, completion = await patched.chat.completions.create_with_completion(
         model=model,
@@ -84,11 +78,7 @@ async def generate_structured_via_instructor_async(
 
 
 def inject_json_instruction(messages: list[dict]) -> list[dict]:
-    """向 messages 注入 JSON 格式指令，确保 json_object 模式可用。
-
-    OpenAI API 要求 prompt 中包含 "JSON" 关键字才能启用 json_object 模式。
-    若 messages 中已包含 "JSON"，则原样返回副本。
-    """
+    """Inject a JSON instruction so ``json_object`` mode is always valid."""
     fb_messages = list(messages)
     if any("JSON" in (m.get("content") or "") for m in fb_messages):
         return fb_messages
@@ -108,14 +98,7 @@ def instructor_fallback_sync(
     response_schema: dict | type,
     provider: str,
 ):
-    """同步 Instructor 降级路径。
-
-    - response_schema 为 Pydantic 类 → instructor create_with_completion
-    - response_schema 为 dict → inject JSON instruction + json_object 模式
-
-    供 Ark 等同步 SDK 后端使用（调用方用 asyncio.to_thread 包装）。
-    不做重试，瞬态错误由调用方的重试循环统一处理。
-    """
+    """Sync Instructor fallback path for backends that use sync SDKs."""
     if isinstance(response_schema, type):
         json_text, input_tokens, output_tokens = generate_structured_via_instructor(
             client=client,
@@ -131,7 +114,7 @@ def instructor_fallback_sync(
             output_tokens=output_tokens,
         )
 
-    logger.info("response_schema 为 dict，无法使用 Instructor，回退到 json_object 模式")
+    logger.info("response_schema is a dict, so Instructor is unavailable; falling back to json_object")
     fb_messages = inject_json_instruction(messages)
     response = client.chat.completions.create(
         model=model,
@@ -156,14 +139,7 @@ async def instructor_fallback_async(
     response_schema: dict | type,
     provider: str,
 ):
-    """异步 Instructor 降级路径。
-
-    - response_schema 为 Pydantic 类 → instructor create_with_completion (async)
-    - response_schema 为 dict → inject JSON instruction + json_object 模式 (async)
-
-    供 OpenAI 等原生异步 SDK 后端使用。
-    不做重试，瞬态错误由调用方的重试循环统一处理。
-    """
+    """Async Instructor fallback path for backends that use async SDKs."""
     from lib.text_backends.base import TextGenerationResult
 
     if isinstance(response_schema, type):
@@ -181,7 +157,7 @@ async def instructor_fallback_async(
             output_tokens=output_tokens,
         )
 
-    logger.info("response_schema 为 dict，无法使用 Instructor，回退到 json_object 模式")
+    logger.info("response_schema is a dict, so Instructor is unavailable; falling back to json_object")
     fb_messages = inject_json_instruction(messages)
     response = await client.chat.completions.create(
         model=model,

@@ -1,7 +1,7 @@
-"""TextGenerator — 文本生成 + 用量追踪包装层。
+"""Text generation and usage-tracking wrapper layer.
 
-类似 MediaGenerator，组合 TextBackend + UsageTracker，
-调用方无需关心 usage tracking 细节。
+Like ``MediaGenerator``, this combines a ``TextBackend`` with ``UsageTracker``
+so callers do not need to manage usage tracking details directly.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 class TextGenerator:
-    """组合 TextBackend + UsageTracker，统一封装文本生成 + 用量追踪。"""
+    """Compose a ``TextBackend`` with ``UsageTracker`` for tracked text generation."""
 
     def __init__(self, backend: TextBackend, usage_tracker: UsageTracker):
         self.backend = backend
@@ -32,7 +32,7 @@ class TextGenerator:
 
     @property
     def model(self) -> str:
-        """当前 backend 的模型名称。"""
+        """Return the current backend model name."""
         return self.backend.model
 
     @classmethod
@@ -41,7 +41,7 @@ class TextGenerator:
         task_type: TextTaskType,
         project_name: str | None = None,
     ) -> TextGenerator:
-        """工厂方法：根据任务类型创建对应的 backend + usage_tracker。"""
+        """Factory method that creates the backend and usage tracker for a task type."""
         backend = await create_text_backend_for_task(task_type, project_name)
         usage_tracker = UsageTracker()
         return cls(backend, usage_tracker)
@@ -51,7 +51,7 @@ class TextGenerator:
         request: TextGenerationRequest,
         project_name: str | None = None,
     ) -> TextGenerationResult:
-        """生成文本并自动记录用量。"""
+        """Generate text and automatically record usage."""
         call_id = await self.usage_tracker.start_call(
             project_name=project_name or "",
             call_type="text",

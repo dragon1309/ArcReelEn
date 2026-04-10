@@ -1,4 +1,4 @@
-"""GeminiVideoBackend — 从 GeminiClient 提取的视频生成逻辑。"""
+"""Gemini video-generation backend extracted from the older Gemini client."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 class GeminiVideoBackend:
-    """Gemini (Veo) 视频生成后端。"""
+    """Gemini (Veo) video backend."""
 
     def __init__(
         self,
@@ -58,7 +58,7 @@ class GeminiVideoBackend:
 
             credentials_file = resolve_vertex_credentials_path(Path(__file__).parent.parent.parent)
             if credentials_file is None:
-                raise ValueError("未找到 Vertex AI 凭证文件")
+                raise ValueError("Vertex AI credentials file was not found")
 
             with open(credentials_file) as f:
                 creds_data = json_module.load(f)
@@ -77,13 +77,13 @@ class GeminiVideoBackend:
         else:
             _api_key = api_key or os.environ.get("GEMINI_API_KEY")
             if not _api_key:
-                raise ValueError("GEMINI_API_KEY 环境变量未设置")
+                raise ValueError("GEMINI_API_KEY environment variable is not set")
 
             effective_base_url = normalize_base_url(base_url or os.environ.get("GEMINI_BASE_URL"))
             http_options = {"base_url": effective_base_url} if effective_base_url else None
             self._client = _genai.Client(api_key=_api_key, http_options=http_options)
 
-        # 缓存 capabilities，避免每次访问创建新 set
+        # Cache capabilities so property access does not allocate a new set each time.
         self._capabilities: set[VideoCapability] = {
             VideoCapability.TEXT_TO_VIDEO,
             VideoCapability.IMAGE_TO_VIDEO,
@@ -107,7 +107,7 @@ class GeminiVideoBackend:
 
     @staticmethod
     def _normalize_duration(duration_seconds: int) -> str:
-        """标准化为 Veo 支持的离散时长值: '4', '6', '8'。"""
+        """Normalize a duration to Veo's supported discrete values: ``4``, ``6``, or ``8``."""
         if duration_seconds <= 4:
             return "4"
         if duration_seconds <= 6:
@@ -115,21 +115,21 @@ class GeminiVideoBackend:
         return "8"
 
     async def generate(self, request: VideoGenerationRequest) -> VideoGenerationResult:
-        """生成视频。任务创建和轮询阶段分离重试，避免瞬态错误导致重建任务。"""
+        """Generate a video with separate retry phases for creation and polling."""
         operation = await self._create_task(request)
         return await self._poll_until_done(operation, request)
 
     @with_retry_async()
     async def _create_task(self, request: VideoGenerationRequest) -> Any:
-        """创建 Gemini 视频生成任务（带重试保护）。"""
-        # 1. 限流
+        """Create a Gemini video-generation task with retry protection."""
+        # 1. Rate limiting.
         if self._rate_limiter:
             await self._rate_limiter.acquire_async(self._video_model)
 
-        # 2. duration 标准化为 Veo 支持的离散值并转字符串
+        # 2. Normalize duration to one of Veo's supported discrete values.
         duration_str = self._normalize_duration(request.duration_seconds)
 
-        # 3. 构建配置
+        # 3. Build the request config.
         config_params: dict = {
             "aspect_ratio": request.aspect_ratio,
             "resolution": request.resolution,
@@ -140,63 +140,63 @@ class GeminiVideoBackend:
             config_params["generate_audio"] = request.generate_audio
         config = self._types.GenerateVideosConfig(**config_params)
 
-        # 4. 准备 source（prompt + 可选起始帧）
+        # 4. Prepare the source payload (prompt plus optional start frame).
         image_param = self._prepare_image_param(request.start_image) if request.start_image else None
         source = self._types.GenerateVideosSource(prompt=request.prompt, image=image_param)
 
-        # 5. 调用 API
+        # 5. Call the API.
         operation = await self._client.aio.models.generate_videos(model=self._video_model, source=source, config=config)
         op_name = getattr(operation, "name", "unknown")
-        logger.info("视频生成已提交, operation=%s", op_name)
+        logger.info("Submitted video generation operation=%s", op_name)
         return operation
 
     async def _poll_until_done(self, operation: Any, request: VideoGenerationRequest) -> VideoGenerationResult:
-        """轮询任务状态直到完成，瞬态错误仅重试当次轮询请求。"""
+        """Poll the operation until completion, retrying only transient poll failures."""
         op_name = getattr(operation, "name", "unknown")
-        logger.info("开始轮询 operation=%s ...", op_name)
+        logger.info("Starting to poll operation=%s ...", op_name)
 
         start_time = time.monotonic()
-        poll_interval = 20  # 与 Google 官方推荐一致
+        poll_interval = 20  # Matches Google's official recommendation.
         max_wait_time = 600
         while not operation.done:
             elapsed = time.monotonic() - start_time
             if elapsed >= max_wait_time:
-                raise TimeoutError(f"视频生成超时（{max_wait_time}秒）")
+                raise TimeoutError(f"Video generation timed out after {max_wait_time} seconds")
             await asyncio.sleep(poll_interval)
             try:
                 operation = await self._client.aio.operations.get(operation)
             except Exception as e:
                 if _should_retry(e, BASE_RETRYABLE_ERRORS):
-                    logger.warning("Gemini 轮询异常（将重试）: %s - %s", type(e).__name__, str(e)[:200])
+                    logger.warning("Gemini polling failed transiently and will retry: %s - %s", type(e).__name__, str(e)[:200])
                     continue
                 raise
             if not operation.done:
                 elapsed = time.monotonic() - start_time
                 logger.info(
-                    "视频生成中... 已等待 %.0f 秒 (operation=%s)",
+                    "Video generation in progress... waited %.0f seconds (operation=%s)",
                     elapsed,
                     op_name,
                 )
 
         total_elapsed = time.monotonic() - start_time
-        logger.info("视频生成完成, 总耗时 %.0f 秒, operation=%s", total_elapsed, op_name)
+        logger.info("Video generation finished in %.0f seconds, operation=%s", total_elapsed, op_name)
 
-        # 检查结果
+        # Validate the result payload.
         if not operation.response or not operation.response.generated_videos:
             error_detail = getattr(operation, "error", None)
             metadata = getattr(operation, "metadata", None)
             logger.error(
-                "视频生成返回空结果: operation=%s, error=%s, metadata=%s, elapsed=%.0f秒",
+                "Video generation returned an empty result: operation=%s, error=%s, metadata=%s, elapsed=%.0f sec",
                 op_name,
                 error_detail,
                 metadata,
                 total_elapsed,
             )
             if error_detail:
-                raise RuntimeError(f"视频生成失败: {error_detail}")
-            raise RuntimeError("视频生成失败: API 返回空结果")
+                raise RuntimeError(f"Video generation failed: {error_detail}")
+            raise RuntimeError("Video generation failed: API returned an empty result")
 
-        # 提取并下载视频
+        # Extract and download the video.
         generated_video = operation.response.generated_videos[0]
         video_ref = generated_video.video
         video_uri = video_ref.uri if video_ref else None
@@ -214,11 +214,11 @@ class GeminiVideoBackend:
         )
 
     # ------------------------------------------------------------------
-    # 内部辅助方法（从 GeminiClient 提取）
+    # Internal helpers extracted from the older Gemini client.
     # ------------------------------------------------------------------
 
     def _prepare_image_param(self, image: str | Path | Image.Image | None):
-        """准备图片参数用于 API 调用 — 提取自 GeminiClient。"""
+        """Prepare the image parameter for API calls."""
         if image is None:
             return None
 
@@ -247,11 +247,11 @@ class GeminiVideoBackend:
 
     @with_retry_async()
     async def _download_video_with_retry(self, video_ref, output_path: Path) -> None:
-        """下载视频（含瞬态错误重试）。"""
+        """Download a video with transient-error retries."""
         await asyncio.to_thread(self._download_video, video_ref, output_path)
 
     def _download_video(self, video_ref, output_path: Path) -> None:
-        """下载视频到本地文件 — 提取自 GeminiClient。"""
+        """Download a generated video to a local file."""
         if self._backend_type == "vertex":
             if video_ref and hasattr(video_ref, "video_bytes") and video_ref.video_bytes:
                 with open(output_path, "wb") as f:
@@ -261,8 +261,8 @@ class GeminiVideoBackend:
 
                 urllib.request.urlretrieve(video_ref.uri, str(output_path))
             else:
-                raise RuntimeError("视频生成成功但无法获取视频数据")
+                raise RuntimeError("Video generation succeeded but no video data was available")
         else:
-            # AI Studio 模式：使用 files.download
+            # AI Studio mode uses ``files.download``.
             self._client.files.download(file=video_ref)
             video_ref.save(str(output_path))

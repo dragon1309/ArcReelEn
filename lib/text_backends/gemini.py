@@ -1,4 +1,4 @@
-"""Gemini 文本生成后端。"""
+"""Gemini text-generation backend."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ DEFAULT_MODEL = "gemini-3-flash-preview"
 
 
 class GeminiTextBackend:
-    """Gemini 文本生成后端，支持 AI Studio 和 Vertex AI 两种模式。"""
+    """Gemini text backend supporting both AI Studio and Vertex AI."""
 
     def __init__(
         self,
@@ -51,14 +51,14 @@ class GeminiTextBackend:
 
             credentials_file = resolve_vertex_credentials_path(Path(__file__).parent.parent.parent)
             if credentials_file is None:
-                raise ValueError("未找到 Vertex AI 凭证文件\n请将服务账号 JSON 文件放入 vertex_keys/ 目录")
+                raise ValueError("Vertex AI credentials file not found. Put the service account JSON in vertex_keys/.")
 
             with open(credentials_file) as f:
                 creds_data = json_module.load(f)
             project_id = creds_data.get("project_id")
 
             if not project_id:
-                raise ValueError(f"凭证文件 {credentials_file} 中未找到 project_id")
+                raise ValueError(f"Credentials file {credentials_file} does not contain project_id")
 
             credentials = service_account.Credentials.from_service_account_file(
                 str(credentials_file), scopes=VERTEX_SCOPES
@@ -70,17 +70,17 @@ class GeminiTextBackend:
                 location="global",
                 credentials=credentials,
             )
-            logger.info("GeminiTextBackend: 使用 Vertex AI 后端（凭证: %s）", credentials_file.name)
+            logger.info("GeminiTextBackend: using Vertex AI backend (credentials: %s)", credentials_file.name)
         else:
             if not api_key:
-                raise ValueError("Gemini API Key 未提供（API Key is required for AI Studio mode）。")
+                raise ValueError("Gemini API key is required for AI Studio mode")
             effective_base_url = normalize_base_url(base_url)
             http_options = {"base_url": effective_base_url} if effective_base_url else None
             self._client = genai.Client(api_key=api_key, http_options=http_options)
             if base_url:
-                logger.info("GeminiTextBackend: 使用 AI Studio 后端（Base URL: %s）", base_url)
+                logger.info("GeminiTextBackend: using AI Studio backend (base URL: %s)", base_url)
             else:
-                logger.info("GeminiTextBackend: 使用 AI Studio 后端")
+                logger.info("GeminiTextBackend: using AI Studio backend")
 
     @property
     def name(self) -> str:
@@ -103,7 +103,7 @@ class GeminiTextBackend:
         response_schema: dict | type | None,
         system_prompt: str | None,
     ) -> dict:
-        """构建 generate_content 的 config 字典。"""
+        """Build the ``generate_content`` config dictionary."""
         config: dict = {}
         if response_schema:
             config["response_mime_type"] = "application/json"
@@ -116,7 +116,7 @@ class GeminiTextBackend:
         return config
 
     def _build_contents(self, request: TextGenerationRequest) -> list:
-        """构建 contents 列表（图片 parts + 文本 prompt）。"""
+        """Build the contents list from image parts and the prompt."""
         contents: list = []
 
         if request.images:
@@ -125,7 +125,7 @@ class GeminiTextBackend:
                     pil_img = Image.open(img_input.path)
                     contents.append(pil_img)
                 elif img_input.url is not None:
-                    # URL 型图片直接作为字符串传递，SDK 内部会处理
+                    # Pass URL images through as strings; the SDK handles them.
                     contents.append(img_input.url)
 
         contents.append(request.prompt)
@@ -133,7 +133,7 @@ class GeminiTextBackend:
 
     @with_retry_async()
     async def generate(self, request: TextGenerationRequest) -> TextGenerationResult:
-        """异步生成文本，支持结构化输出和 vision。"""
+        """Generate text asynchronously with structured-output and vision support."""
         config = self._build_config(request.response_schema, request.system_prompt)
         contents = self._build_contents(request)
 

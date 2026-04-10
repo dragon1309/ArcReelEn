@@ -71,33 +71,33 @@ async def migrate_json_to_db(session: AsyncSession, json_path: Path) -> None:
     provider_repo = ProviderConfigRepository(session)
     setting_repo = SystemSettingRepository(session)
 
-    # 1. Provider-specific keys
+    # 1. Provider-specific keys.
     for json_key, provider, config_key, is_secret in _PROVIDER_KEY_MAP:
         value = overrides.get(json_key)
         if value is not None:
             await provider_repo.set(provider, config_key, str(value), is_secret=is_secret)
 
-    # 1b. Vertex credentials — detect existing file
+    # 1b. Vertex credentials: detect an existing credentials file.
     project_root = json_path.parent.parent  # projects/.system_config.json → project root
     vertex_cred_path = resolve_vertex_credentials_path(project_root)
     if vertex_cred_path and vertex_cred_path.exists():
         await provider_repo.set("gemini-vertex", "credentials_path", str(vertex_cred_path), is_secret=False)
 
-    # 2. Gemini rate limit keys → both aistudio and vertex
+    # 2. Gemini rate-limit keys apply to both AI Studio and Vertex.
     for json_key, config_key in _GEMINI_RATE_KEYS:
         value = overrides.get(json_key)
         if value is not None:
             for p in ("gemini-aistudio", "gemini-vertex"):
                 await provider_repo.set(p, config_key, str(value), is_secret=False)
 
-    # 3. Combined backend fields
+    # 3. Combined backend fields.
     image_backend = overrides.get("image_backend", "aistudio")
     image_model = overrides.get("image_model", "gemini-3.1-flash-image-preview")
     await setting_repo.set("default_image_backend", f"gemini-{image_backend}/{image_model}")
 
     video_backend = overrides.get("video_backend", "aistudio")
     video_model = overrides.get("video_model", "veo-3.1-generate-001")
-    # AI Studio 使用 preview 后缀，Vertex 使用 001 后缀
+    # AI Studio uses preview suffixes, while Vertex uses 001 suffixes.
     if video_backend == "aistudio":
         _model_fix = {
             "veo-3.1-generate-001": "veo-3.1-generate-preview",
@@ -106,13 +106,13 @@ async def migrate_json_to_db(session: AsyncSession, json_path: Path) -> None:
         video_model = _model_fix.get(video_model, video_model)
     await setting_repo.set("default_video_backend", f"gemini-{video_backend}/{video_model}")
 
-    # 4. System setting keys
+    # 4. System setting keys.
     for key in _SYSTEM_SETTING_KEYS:
         value = overrides.get(key)
         if value is not None:
             await setting_repo.set(key, str(value))
 
-    # 5. max_workers → write to all configured providers that support the media type
+    # 5. Apply max_workers to every configured provider that supports the media type.
     configured_providers = set()
     for json_key, provider, _, _ in _PROVIDER_KEY_MAP:
         if overrides.get(json_key) is not None:
@@ -130,15 +130,15 @@ async def migrate_json_to_db(session: AsyncSession, json_path: Path) -> None:
         if video_max is not None and "video" in meta.media_types:
             await provider_repo.set(provider_id, "video_max_workers", str(video_max), is_secret=False)
 
-    # 6. Catch-all: remaining override keys → system_setting
+    # 6. Catch-all: move remaining override keys into system settings.
     for key, value in overrides.items():
         if key not in _HANDLED_KEYS:
-            logger.warning("迁移未知配置项: %s=%s", key, value)
+            logger.warning("Migrating unknown config key into system settings: %s=%s", key, value)
             await setting_repo.set(key, str(value))
 
     await session.commit()
 
-    # 7. Rename to .bak
+    # 7. Rename the original file to .bak.
     bak_path = json_path.with_suffix(".json.bak")
     json_path.rename(bak_path)
     logger.info("Migration complete. Renamed to %s", bak_path)

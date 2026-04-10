@@ -5,7 +5,7 @@ def build_character_prompt(name: str, description: str, style: str = "", style_d
     """Build a character-sheet image prompt."""
     style_part = f", {style}" if style else ""
 
-    # 构建风格前缀
+    # Build the visual-style prefix.
     style_prefix = ""
     if style_description:
         style_prefix = f"Visual style: {style_description}\n\n"
@@ -36,7 +36,7 @@ def build_prop_prompt(name: str, description: str, style: str = "", style_descri
     """Build a prop-style clue reference prompt."""
     style_suffix = f", {style}" if style else ""
 
-    # 构建风格前缀
+    # Build the visual-style prefix.
     style_prefix = ""
     if style_description:
         style_prefix = f"Visual style: {style_description}\n\n"
@@ -52,7 +52,7 @@ def build_location_prompt(name: str, description: str, style: str = "", style_de
     """Build a location-style clue reference prompt."""
     style_suffix = f", {style}" if style else ""
 
-    # 构建风格前缀
+    # Build the visual-style prefix.
     style_prefix = ""
     if style_description:
         style_prefix = f"Visual style: {style_description}\n\n"

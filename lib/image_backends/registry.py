@@ -1,4 +1,4 @@
-"""图片后端注册与工厂。"""
+"""Registry and factory helpers for image backends."""
 
 from __future__ import annotations
 

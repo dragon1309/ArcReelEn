@@ -36,13 +36,13 @@ class _FakeTranslationGenerator:
 
 def _create_demo_project(project_dir: Path) -> None:
     project = {
-        "title": "宫墙秘事",
+        "title": "Palace Wall Secrets",
         "content_mode": "drama",
-        "style": "古风悬疑",
-        "style_description": "冷色调",
+        "style": "Period mystery",
+        "style_description": "Cool-toned",
         "characters": {
             "姜月茴": {
-                "description": "女主",
+                "description": "Lead protagonist",
                 "character_sheet": "characters/jiang.png",
                 "reference_image": "characters/refs/jiang-ref.png",
             }
@@ -50,7 +50,7 @@ def _create_demo_project(project_dir: Path) -> None:
         "clues": {
             "玉佩": {
                 "type": "prop",
-                "description": "关键线索",
+                "description": "Key clue",
                 "importance": "major",
                 "clue_sheet": "clues/jade.png",
             }
@@ -58,27 +58,27 @@ def _create_demo_project(project_dir: Path) -> None:
         "episodes": [
             {
                 "episode": 1,
-                "title": "第一集",
+                "title": "Episode 1",
                 "script_file": "scripts/episode_1.json",
             }
         ],
     }
     script = {
         "episode": 1,
-        "title": "初入宫门",
-        "summary": "玉佩现身",
+        "title": "Entering the Palace",
+        "summary": "The jade pendant appears",
         "content_mode": "drama",
         "scenes": [
             {
                 "scene_id": "E1S01",
                 "scene_type": "剧情",
                 "duration_seconds": 8,
-                "title": "庭院相遇",
+                "title": "Courtyard encounter",
                 "characters_in_scene": ["姜月茴"],
                 "clues_in_scene": ["玉佩"],
-                "note": "她察觉异样",
-                "image_prompt": "月下庭院，紧张对峙",
-                "video_prompt": "镜头缓慢推进，衣袂翻飞",
+                "note": "She senses something is wrong",
+                "image_prompt": "Moonlit courtyard, tense standoff",
+                "video_prompt": "Slow push-in as robes flutter",
                 "generated_assets": {
                     "storyboard_image": "storyboards/E1S01.png",
                     "video_clip": "videos/E1S01.mp4",
@@ -91,9 +91,9 @@ def _create_demo_project(project_dir: Path) -> None:
     _write_json(project_dir / "project.json", project)
     _write_json(project_dir / "scripts" / "episode_1.json", script)
     (project_dir / "drafts").mkdir(parents=True, exist_ok=True)
-    (project_dir / "drafts" / "outline.md").write_text("草稿：玉佩第一次出现。", encoding="utf-8")
+    (project_dir / "drafts" / "outline.md").write_text("Draft: the jade pendant appears for the first time.", encoding="utf-8")
     (project_dir / "source").mkdir(parents=True, exist_ok=True)
-    (project_dir / "source" / "chapter1.txt").write_text("第一章：她拾起玉佩。", encoding="utf-8")
+    (project_dir / "source" / "chapter1.txt").write_text("Chapter 1: she picks up the jade pendant.", encoding="utf-8")
 
     for relative_path in (
         "characters/jiang.png",
