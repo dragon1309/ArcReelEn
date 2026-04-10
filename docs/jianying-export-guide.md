@@ -1,55 +1,72 @@
-# 剪映草稿导出指南
+# Jianying Draft Export Guide
 
-将 ArcReel 已生成的视频片段按集导出为剪映（JianYing）草稿文件，在剪映桌面版中直接打开并进行二次编辑——调整节奏、添加字幕、转场、配音等。
+ArcReel can export generated video clips as a Jianying desktop draft so you can continue editing in Jianying with the timeline already assembled.
 
-## 前置条件
+Typical follow-up work in Jianying includes:
 
-- 已在 ArcReel 中完成至少一集的视频片段生成
-- 本地已安装 **剪映桌面版**（5.x 或 6+）
+- pacing changes
+- subtitles
+- transitions
+- voice-over
+- music and sound effects
 
-## 操作步骤
+## Prerequisites
 
-### 1. 找到剪映草稿目录
+Before exporting, make sure:
 
-导出前需要知道本地剪映草稿的存放路径。
+- your ArcReel project already has generated video clips for at least one episode
+- Jianying Desktop is installed locally
+- you know your local Jianying draft directory
 
-**macOS：**
+Supported desktop versions:
+
+- Jianying 6.0+
+- Jianying 5.x
+
+## Step 1: Find Your Jianying Draft Directory
+
+### macOS
+
+```text
+/Users/<username>/Movies/JianyingPro/User Data/Projects/com.lveditor.draft
 ```
-/Users/<用户名>/Movies/JianyingPro/User Data/Projects/com.lveditor.draft
+
+### Windows
+
+```text
+C:\Users\<username>\AppData\Local\JianyingPro\User Data\Projects\com.lveditor.draft
 ```
 
-**Windows：**
-```
-C:\Users\<用户名>\AppData\Local\JianyingPro\User Data\Projects\com.lveditor.draft
-```
+If you changed the draft directory inside Jianying, use that custom path instead of the default one above.
 
-> **提示**：可在剪映设置中查看"草稿路径"的位置。如果你修改过默认路径，请使用实际的草稿目录。
+## Step 2: Start The Export In ArcReel
 
-### 2. 在 ArcReel 中发起导出
+1. Open the project you want to export.
+2. Click `Export` in the top-right corner.
+3. Choose `Export as Jianying Draft`.
 
-1. 打开目标项目
-2. 点击右上角 **导出** 按钮
-3. 选择 **导出为剪映草稿**
+## Step 3: Fill In The Export Form
 
-### 3. 填写导出参数
+You will be asked for:
 
-| 参数 | 说明 |
-|------|------|
-| **集数** | 选择要导出的集（多集项目会出现下拉选择器） |
-| **剪映版本** | 选择 **6.0+**（推荐）或 **5.x**，需与本地安装的剪映版本匹配 |
-| **草稿目录** | 填入上面找到的剪映草稿路径（首次填写后会自动记忆） |
+- `Episode`: choose the episode to export if the project has more than one
+- `Jianying version`: choose `6.0+` or `5.x` to match your local installation
+- `Draft directory`: paste the Jianying draft path you found earlier
 
-点击 **导出草稿**，浏览器会下载一个 ZIP 文件。
+After you confirm, the browser downloads a ZIP archive.
 
-### 4. 解压到草稿目录
+## Step 4: Extract The ZIP Into The Draft Directory
 
-将下载的 ZIP 文件解压到上面填写的剪映草稿目录中。解压后的结构如下：
+Unzip the downloaded archive directly into the Jianying draft directory.
 
-```
+The result should look like this:
+
+```text
 com.lveditor.draft/
-├── ... (其他已有草稿)
-└── {项目名}_第{N}集/          ← 解压出来的文件夹
-    ├── draft_info.json        (剪映 6+) 或 draft_content.json (5.x)
+├── ...
+└── {project_name}_Episode_{N}/
+    ├── draft_info.json        # Jianying 6+
+    ├── draft_content.json     # Jianying 5.x uses this instead
     ├── draft_meta_info.json
     └── assets/
         ├── segment_S1.mp4
@@ -57,48 +74,56 @@ com.lveditor.draft/
         └── ...
 ```
 
-### 5. 在剪映中打开
+Make sure the extracted folder is placed directly inside the draft directory, not inside an extra nested folder.
 
-1. 打开（或重启）剪映桌面版
-2. 在"草稿"列表中找到新出现的 **{项目名}\_第{N}集** 草稿
-3. 双击打开即可在时间线上看到所有视频片段
+## Step 5: Open The Draft In Jianying
 
-## 导出内容说明
+1. Start Jianying Desktop, or restart it if it was already open.
+2. Look for the new draft in the draft list.
+3. Open it to review the generated timeline.
 
-### 说书模式（Narration）
+## What Gets Exported
 
-- **视频轨**：所有已生成的视频片段按顺序排列
-- **字幕轨**：自动附带每个片段对应的小说原文作为字幕（白色文字、黑色描边），可在剪映中自由调整样式和位置
+### Narration Mode
 
-### 剧集模式（Drama）
+- Video track: all generated video clips in order
+- Subtitle track: source narration text is added as subtitles for each clip
 
-- **视频轨**：按场景顺序排列所有已生成的视频片段
-- 不附带字幕（多角色对话场景的字幕结构较复杂，建议在剪映中手动添加）
+### Drama Mode
 
-### 画布尺寸
+- Video track: generated clips are ordered by scene
+- No subtitle track is added automatically
 
-自动根据项目设置确定：
-- 竖屏（9:16）→ 1080×1920
-- 横屏（16:9）→ 1920×1080
+Drama projects often need more manual subtitle work because dialogue timing is more complex.
 
-如项目未设置宽高比，会从首个视频文件自动检测。
+## Canvas Size Rules
 
-## 常见问题
+ArcReel exports the draft using the project aspect ratio:
 
-### 剪映中看不到导出的草稿？
+- `9:16` -> `1080x1920`
+- `16:9` -> `1920x1080`
 
-- 确认 ZIP 解压到了正确的草稿目录
-- 确认解压后的文件夹直接位于草稿目录下（不要多套一层文件夹）
-- 尝试重启剪映
+If the project ratio is missing, ArcReel tries to detect it from the first exported video file.
 
-### 版本不匹配怎么办？
+## Troubleshooting
 
-导出时选择的剪映版本必须与本地安装版本对应：
-- 剪映 6.0 及以上 → 选择 **6.0+**
-- 剪映 5.x → 选择 **5.x**
+### The Draft Does Not Appear In Jianying
 
-如果选错了版本，重新导出并选择正确版本即可。
+Check the following:
 
-### 部分视频片段缺失？
+- the ZIP was extracted into the correct Jianying draft directory
+- the extracted project folder is directly under that directory
+- Jianying was restarted after extraction
 
-导出仅包含已成功生成的视频片段。如果某些片段尚未生成或生成失败，它们不会出现在草稿中。回到 ArcReel 补充生成后重新导出即可。
+### The Version Looks Wrong
+
+The export version must match the installed Jianying version:
+
+- Jianying 6.0 or later -> choose `6.0+`
+- Jianying 5.x -> choose `5.x`
+
+If you picked the wrong version, export again with the correct selection.
+
+### Some Video Clips Are Missing
+
+Only successfully generated clips are included in the draft. If a clip failed or was never generated, it will not appear in Jianying. Generate the missing clips in ArcReel and export again.

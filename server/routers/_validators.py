@@ -1,4 +1,4 @@
-"""共享校验函数，供多个 router 复用。"""
+"""Shared validation helpers reused by multiple routers."""
 
 from __future__ import annotations
 
@@ -6,8 +6,8 @@ from fastapi import HTTPException
 
 from lib.config.registry import PROVIDER_REGISTRY
 
-# 旧格式 provider 名 → 新格式 registry provider_id。
-# 与 generation_worker._normalize_provider_id() 保持一致。
+# Legacy provider name -> canonical registry provider_id.
+# Keep this aligned with generation_worker._normalize_provider_id().
 _LEGACY_PROVIDER_NAMES: dict[str, str] = {
     "gemini": "gemini-aistudio",
     "vertex": "gemini-vertex",
@@ -16,23 +16,24 @@ _LEGACY_PROVIDER_NAMES: dict[str, str] = {
 
 
 def validate_backend_value(value: str, field_name: str) -> None:
-    """校验 ``provider/model`` 格式的 backend 字段值。
+    """Validate a backend value that should use ``provider/model`` format.
 
-    也接受旧格式的单 provider 名（如 ``"gemini"``），以兼容存量项目。
+    Legacy single-provider values such as ``"gemini"`` are still accepted so
+    older projects can be normalized downstream.
 
     Raises:
-        HTTPException(400): 格式不合法或 provider 不在注册表中。
+        HTTPException(400): The format is invalid or the provider is unknown.
     """
     if "/" not in value:
         if value in _LEGACY_PROVIDER_NAMES or value in PROVIDER_REGISTRY:
-            return  # 旧格式或裸 registry id，下游 _normalize_provider_id() 处理
+            return  # Legacy format or bare registry id; normalized downstream.
         raise HTTPException(
             status_code=400,
-            detail=f"{field_name} 格式应为 provider/model",
+            detail=f"{field_name} must use provider/model format",
         )
     provider_id = value.split("/", 1)[0]
     if provider_id not in PROVIDER_REGISTRY and not provider_id.startswith("custom-"):
         raise HTTPException(
             status_code=400,
-            detail=f"未知供应商: {provider_id}",
+            detail=f"Unknown provider: {provider_id}",
         )

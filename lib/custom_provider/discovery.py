@@ -1,6 +1,6 @@
-"""自定义供应商模型发现。
+"""Model discovery helpers for custom providers.
 
-提供模型列表查询与 media_type 推断功能。
+This module lists available models and infers their media types.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 _IMAGE_PATTERN = re.compile(r"image|dall|img", re.IGNORECASE)
 _VIDEO_PATTERN = re.compile(r"video|sora|kling|wan|seedance|cog|mochi|veo|pika", re.IGNORECASE)
 
-# Google generation method → media_type 映射
+# Google generation method -> media_type mapping.
 _GENERATION_METHOD_MAP: dict[str, str] = {
     "generateVideo": "video",
     "generateVideos": "video",
@@ -27,7 +27,7 @@ _GENERATION_METHOD_MAP: dict[str, str] = {
 
 
 def infer_media_type(model_id: str) -> str:
-    """根据模型 ID 关键字推断 media_type。
+    """Infer ``media_type`` from model-id keywords.
 
     Returns:
         "image" | "video" | "text"
@@ -40,29 +40,30 @@ def infer_media_type(model_id: str) -> str:
 
 
 async def discover_models(api_format: str, base_url: str | None, api_key: str) -> list[dict]:
-    """查询供应商的可用模型列表。
+    """Query the list of models available from a provider.
 
     Args:
-        api_format: API 格式 ("openai" | "google")
-        base_url: 供应商 API 基础 URL
-        api_key: API 密钥
+        api_format: API format (``"openai"`` or ``"google"``)
+        base_url: Provider API base URL
+        api_key: API key
 
     Returns:
-        模型列表，每项包含: model_id, display_name, media_type, is_default, is_enabled
+        A list of model dictionaries containing ``model_id``, ``display_name``,
+        ``media_type``, ``is_default``, and ``is_enabled``.
 
     Raises:
-        ValueError: api_format 不支持
+        ValueError: The API format is not supported.
     """
     if api_format == "openai":
         return await _discover_openai(base_url, api_key)
     elif api_format == "google":
         return await _discover_google(base_url, api_key)
     else:
-        raise ValueError(f"不支持的 api_format: {api_format!r}，支持: 'openai', 'google'")
+        raise ValueError(f"Unsupported api_format: {api_format!r}. Supported values: 'openai', 'google'")
 
 
 async def _discover_openai(base_url: str | None, api_key: str) -> list[dict]:
-    """通过 OpenAI 兼容 API 发现模型。"""
+    """Discover models through an OpenAI-compatible API."""
 
     def _sync():
         from lib.config.url_utils import ensure_openai_base_url
@@ -76,7 +77,7 @@ async def _discover_openai(base_url: str | None, api_key: str) -> list[dict]:
 
 
 async def _discover_google(base_url: str | None, api_key: str) -> list[dict]:
-    """通过 Google genai SDK 发现模型。"""
+    """Discover models through the Google GenAI SDK."""
 
     def _sync():
         from lib.config.url_utils import ensure_google_base_url
@@ -104,10 +105,10 @@ async def _discover_google(base_url: str | None, api_key: str) -> list[dict]:
 
 
 def _infer_from_generation_methods(model) -> str | None:
-    """从 Google model 的 supported_generation_methods 推断 media_type。
+    """Infer ``media_type`` from a Google model's generation methods.
 
     Returns:
-        推断出的 media_type，无法推断时返回 None
+        The inferred ``media_type``, or ``None`` when no match is found.
     """
     methods = getattr(model, "supported_generation_methods", None)
     if not methods:
@@ -121,7 +122,7 @@ def _infer_from_generation_methods(model) -> str | None:
 
 
 def _build_result_list(entries: list[tuple[str, str]]) -> list[dict]:
-    """将 (model_id, media_type) 列表转为结果字典列表，标记每种 media_type 的第一个为 default。"""
+    """Build result dictionaries and mark the first model of each type as default."""
     seen_types: set[str] = set()
     result: list[dict] = []
 

@@ -1,268 +1,250 @@
-# 完整入门教程
+# Getting Started
 
-本教程指导你从零开始，使用 ArcReel 将小说转换为短视频。
+This guide walks through the full ArcReel flow, from setup to a finished short video.
 
-## 你将学到
+## What You Will Do
 
-1. **环境准备** — 获取 API 密钥
-2. **部署服务** — 通过 Docker 部署
-3. **完整流程** — 从小说到视频的每一步操作
-4. **进阶技巧** — 重新生成、费用控制、本地开发
+1. Prepare your API keys.
+2. Start ArcReel with Docker.
+3. Configure the assistant and media providers.
+4. Turn a text source into storyboards, assets, and video clips.
+5. Export or iterate on the result.
 
-## 预计耗时
+## Time And Cost Expectations
 
-- 环境准备：10-20 分钟（仅首次需要）
-- 生成一个 1 分钟视频：约 30 分钟
+- Initial setup: about 10 to 20 minutes.
+- A short one-minute project: often around 30 minutes end to end, depending on provider speed.
+- Costs depend on your chosen providers and models. ArcReel supports Gemini, Volcengine Ark, Grok, OpenAI, and custom OpenAI-compatible or Google-compatible providers.
 
-## 费用预估
+Typical cost levers:
 
-ArcReel 支持多个供应商（Gemini、火山方舟、Grok、OpenAI 及自定义供应商），以下以 Gemini 为例：
+- Character reference images usually cost more than quick storyboard images.
+- Video generation is the most expensive step.
+- Fast or lite video models are usually much cheaper for iteration.
 
-| 类型 | 模型 | 单价 | 说明 |
-|------|------|------|------|
-| 图片生成 | Nano Banana Pro | $0.134/张 (1K/2K) | 高质量，适合角色设计图 |
-| 图片生成 | Nano Banana 2 | $0.067/张 (1K) | 更快更便宜，适合分镜图 |
-| 视频生成 | Veo 3.1 | $0.40/秒 (1080p 含音频) | 高质量 |
-| 视频生成 | Veo 3.1 Fast | $0.15/秒 (1080p 含音频) | 更快更便宜 |
-| 视频生成 | Veo 3.1 Lite | 更低 | 轻量模型，仅 AI Studio |
+## Prerequisites
 
-> 💡 **示例**（Gemini）：一个包含 10 个场景（每场景 8 秒）的短视频
-> - 图片：3 张角色设计（Pro）+ 10 张分镜（Flash）= $0.40 + $0.67 = $1.07
-> - 视频：80 秒 × $0.15（Fast 模式）= $12
-> - **总计约 $13**
+Before you begin, make sure you have:
 
-> 🎁 **新用户福利**：Google Cloud 新用户可获得 **$300 免费赠金**，有效期 90 天，足够生成大量视频！
->
-> 其他供应商费用请参考各自官方定价页面，ArcReel 在设置页提供实时费用追踪。
+- Docker and Docker Compose
+- At least one image or video provider API key
+- An Anthropic-compatible API key for the built-in assistant
+- A machine that can run Docker on Linux, macOS, or Windows with WSL
 
----
+Recommended minimums:
 
-## 第一章：环境准备
+- 2 GB RAM or more
+- Stable internet access to your configured AI providers
 
-### 1.1 获取图片/视频生成供应商 API 密钥
+## Step 1: Collect API Keys
 
-ArcReel 支持多个供应商，**至少配置一个**即可开始使用：
+### Media Providers
 
-| 供应商 | 获取地址 | 说明 |
-|--------|---------|------|
-| **Gemini** (Google) | [AI Studio](https://aistudio.google.com/apikey) | 需付费层级，新用户自动获 $300 赠金 |
-| **火山方舟** | [火山引擎控制台](https://console.volcengine.com/ark) | 按 token/张数计费 (CNY) |
-| **Grok** (xAI) | [xAI Console](https://console.x.ai/) | 按张/秒计费 (USD) |
-| **OpenAI** | [OpenAI Platform](https://platform.openai.com/) | 按张/秒计费 (USD) |
+ArcReel only needs one configured media provider to get started.
 
-也可以在部署后通过设置页添加**自定义供应商**（任何 OpenAI 兼容 / Google 兼容 API）。
+- Gemini: [Google AI Studio](https://aistudio.google.com/apikey)
+- Volcengine Ark: [Volcengine Console](https://console.volcengine.com/ark)
+- Grok: [xAI Console](https://console.x.ai/)
+- OpenAI: [OpenAI Platform](https://platform.openai.com/)
 
-> ⚠️ API 密钥是敏感信息，请妥善保管，不要分享给他人或上传到公开仓库。
+You can also add custom providers after deployment if they support OpenAI-compatible or Google-compatible APIs.
 
-### 1.2 获取 Anthropic API 密钥
+### Assistant Provider
 
-ArcReel 内置基于 Claude Agent SDK 的 AI 助手，负责剧本创作、智能对话引导等关键环节。
+ArcReel’s built-in assistant uses Anthropic-compatible models for project guidance, script work, and agent workflows.
 
-**方式 A：使用 Anthropic 官方 API**
+- Official Anthropic API: [Anthropic Console](https://console.anthropic.com/)
+- Compatible proxy or gateway: configure the custom base URL and model in Settings after startup
 
-1. 访问 [Anthropic Console](https://console.anthropic.com/)
-2. 注册账号并创建 API 密钥
-3. 后续在 Web UI 设置页配置
+Keep all API keys private. Do not commit them to Git or share them publicly.
 
-**方式 B：使用第三方 Anthropic 兼容 API**
+## Step 2: Install Docker If Needed
 
-如果无法直接访问 Anthropic API，可在设置页配置：
-
-- **Base URL** — 填写中转服务或兼容 API 的地址
-- **Model** — 指定使用的模型名称（如 `claude-sonnet-4-6`）
-- 还可分别配置 Haiku / Sonnet / Opus 的默认模型和 Subagent 模型
-
-### 1.3 准备服务器
-
-**服务器要求：**
-
-- 操作系统：Linux / MacOS / Windows WSL
-- 内存：建议 2GB+
-- 已安装 Docker 和 Docker Compose
-
-**安装 Docker（如未安装）：**
+On Ubuntu or Debian:
 
 ```bash
-# Ubuntu / Debian
 curl -fsSL https://get.docker.com | sh
 sudo usermod -aG docker $USER
+```
 
-# 重新登录后验证
+After reloading your shell, verify the installation:
+
+```bash
 docker --version
 docker compose version
 ```
 
----
+## Step 3: Start ArcReel
 
-## 第二章：部署服务
+### Option A: Default Deploy With SQLite
 
-### 2.1 下载并启动
-
-#### 方式 A：默认部署（SQLite，推荐入门）
+This is the simplest option for local use and evaluation.
 
 ```bash
-# 1. 克隆项目
 git clone https://github.com/ArcReel/ArcReel.git
 cd ArcReel/deploy
-
-# 2. 创建环境变量文件
 cp .env.example .env
-
-# 3. 启动服务
 docker compose up -d
 ```
 
-#### 方式 B：生产部署（PostgreSQL，推荐正式使用）
+### Option B: Production Deploy With PostgreSQL
+
+Use this for a more production-oriented setup.
 
 ```bash
+git clone https://github.com/ArcReel/ArcReel.git
 cd ArcReel/deploy/production
-
-# 创建环境变量文件（需设置 POSTGRES_PASSWORD）
 cp .env.example .env
-
 docker compose up -d
 ```
 
-等待容器启动完成后，在浏览器访问 **http://你的服务器IP:1241**
+For the production stack, make sure you set `POSTGRES_PASSWORD` in `.env` before startup.
 
-### 2.2 首次配置
+Once the containers are ready, open:
 
-1. 使用默认账号登录（用户名 `admin`，密码在 `.env` 中通过 `AUTH_PASSWORD` 设置；未设置则首次启动时自动生成并回写到 `.env`）
-2. 进入 **设置页**（`/settings`）
-3. 配置 **Anthropic API Key**（驱动 AI 助手），支持自定义 Base URL 和模型
-4. 配置至少一个图片/视频**供应商 API Key**（Gemini / 火山方舟 / Grok / OpenAI），或添加自定义供应商
-5. 根据需要调整模型选择、速率限制等参数
+```text
+http://<your-server-ip>:1241
+```
 
-> 💡 所有配置项都可以在设置页修改，无需手动编辑配置文件。
+## Step 4: First Login And Configuration
 
----
+1. Sign in with the default username `admin`.
+2. Use the password from `AUTH_PASSWORD` in your `.env` file.
+3. Open `Settings`.
+4. Configure your Anthropic-compatible assistant credentials.
+5. Configure at least one media provider credential.
+6. Pick default text, image, and video backends if needed.
 
-## 第三章：完整流程
+Most configuration can be changed in the UI without editing files manually.
 
-以下步骤在 Web UI 工作台中完成。
+## Step 5: Create Your First Project
 
-### 3.1 创建项目
+In the project list:
 
-1. 在项目列表页点击「新建项目」
-2. 输入项目名称（如「我的小说」）
-3. 上传小说文本文件（.txt 格式）
+1. Click `New Project`.
+2. Enter a project title.
+3. Upload a source text file such as `.txt`.
+4. Open the project workspace.
 
-### 3.2 生成分镜剧本
+## Step 6: Run The Main Creative Workflow
 
-在项目工作台右侧打开 AI 助手面板，通过对话让助手生成剧本：
+ArcReel is designed to move step by step through a structured media pipeline.
 
-- AI 会自动分析小说内容，将其拆分为适合视频的片段
-- 每个片段包含画面描述、出场角色、重要道具/场景（线索）
+### Generate The Script
 
-**审核点**：检查剧本结构是否合理，角色和线索是否识别正确。
+Use the assistant to analyze your source text and build a scene or segment structure.
 
-### 3.3 生成角色设计图
+Check:
 
-AI 为每个角色生成设计图，用于保持后续所有场景中的角色外观一致。
+- whether the story beats make sense
+- whether characters and clues were extracted correctly
+- whether the pacing matches your target format
 
-**审核点**：检查角色形象是否符合小说描述，不满意可重新生成。
+### Generate Character References
 
-### 3.4 生成线索设计图
+Generate character reference images early so later scenes stay visually consistent.
 
-AI 为重要道具和场景元素（如信物、特定地点）生成参考图。
+Check:
 
-**审核点**：检查线索设计是否符合预期。
+- whether each character matches the source description
+- whether clothing, age, and mood are correct
 
-### 3.5 生成分镜图片
+### Generate Clue References
 
-AI 根据剧本生成每个场景的静态图片，自动引用角色和线索设计图确保一致性。
+Generate important props, objects, or location references.
 
-**审核点**：检查场景构图、角色一致性、氛围是否正确。
+Check:
 
-### 3.6 生成视频片段
+- whether recurring items look right
+- whether key objects are recognizable enough for later shots
 
-分镜图片作为起始帧，通过所选视频供应商（Veo 3.1 / Seedance / Grok / Sora 2 等）生成 4-8 秒的动态视频片段。
+### Generate Storyboard Images
 
-生成任务进入异步任务队列，你可以在任务监控面板实时查看进度。Image 和 Video 通道独立并发，RPM 限速确保不超 API 配额。
+Generate storyboard or scene images for each segment.
 
-**审核点**：预览每个视频片段，不满意可单独重新生成。
+Check:
 
-### 3.7 合成最终视频
+- composition
+- atmosphere
+- continuity
+- character consistency
 
-所有片段通过 FFmpeg 拼接，添加转场效果和背景音乐，输出最终视频。
+### Generate Video Clips
 
-默认输出 **9:16 竖屏**格式，适合发布到短视频平台。
+Use storyboard images or prompts to generate short clips. ArcReel queues these jobs asynchronously and tracks their progress in the UI.
 
----
+Check:
 
-## 第四章：进阶技巧
+- motion quality
+- character consistency
+- timing
+- whether any clip needs a targeted re-run
 
-### 4.1 版本历史与回滚
+### Review Or Assemble The Final Video
 
-每次重新生成素材时，系统自动保存历史版本。在工作台的时间线视图中，可以浏览历史版本并一键回滚。
+After the clips are ready, use ArcReel’s export and editing flow to assemble or refine the final result.
 
-### 4.2 控制费用
+## Iteration Tips
 
-**查看费用统计：**
+- Review outputs at each stage before generating the next stage.
+- Start with a small number of scenes to validate style and cost.
+- Use faster video models while iterating.
+- Keep strong character references so later generations stay consistent.
+- Use version history to roll back assets when a regeneration is worse than the previous one.
 
-在设置页可查看 API 调用次数和费用明细。
+## Import And Export
 
-**减少开支的技巧：**
+ArcReel can package a project for backup or transfer.
 
-- 仔细审核每个阶段的输出，减少返工
-- 先生成少量场景测试效果，满意后再批量生成
-- 视频生成使用 Fast 模式可节省约 60% 费用
-- 分镜图使用 Flash 模型，角色设计图使用 Pro 模型
+- Export: create a project archive with assets and metadata
+- Import: restore a project from an archive
 
-### 4.3 项目导入/导出
+If you plan to continue editing in Jianying, see [docs/jianying-export-guide.md](jianying-export-guide.md).
 
-项目支持打包归档，方便备份和迁移：
+## Troubleshooting
 
-- **导出**：将整个项目（含所有素材）打包为归档文件
-- **导入**：从归档文件恢复项目
+### Docker Will Not Start
 
----
+Check:
 
-## 第五章：常见问题
+```bash
+systemctl status docker
+ss -tlnp | grep 1241
+docker compose logs
+```
 
-### Q: Docker 启动失败？
+Run the last command from the same deploy directory you started.
 
-1. 确认 Docker 服务正在运行：`systemctl status docker`
-2. 检查端口 1241 是否被占用：`ss -tlnp | grep 1241`
-3. 查看容器日志：`docker compose logs`（在对应的 `deploy/` 或 `deploy/production/` 目录下执行）
+### Provider Calls Fail
 
-### Q: API 调用失败？
+Check:
 
-1. 确认设置页中对应供应商的 API Key 填写正确
-2. Gemini 用户需确认已启用付费层级（免费层级不支持图片/视频生成）
-3. 检查服务器网络是否可以访问对应供应商的 API 服务
-4. 在供应商控制台查看 API 使用量是否超限
+- the API key value in Settings
+- whether your provider account has billing or quota enabled
+- whether your server can reach the provider endpoint
+- whether the selected model is supported by that provider account
 
-### Q: 角色在不同场景中长得不一样？
+### Character Consistency Is Weak
 
-1. 确保先生成角色设计图
-2. 检查角色设计图质量，不满意要先重新生成
-3. 系统会自动使用角色设计图作为参考，确保后续场景一致
+Try this order:
 
-### Q: 视频生成很慢？
+1. Regenerate the character reference first.
+2. Confirm the prompt clearly describes stable visual traits.
+3. Regenerate only the affected storyboard or clip after the reference is fixed.
 
-视频生成通常需要 1-3 分钟/片段，这是正常的。影响因素：
+### Video Generation Feels Slow
 
-- 视频时长（4 秒 vs 8 秒）
-- API 服务器负载
-- 网络状况
+That is normal for many providers. Speed depends on:
 
-任务队列支持并发处理，多个视频片段可同时生成。
+- provider load
+- clip duration
+- chosen model tier
+- your queue size and RPM settings
 
-### Q: 生成中断了怎么办？
+## Next Steps
 
-任务队列支持断点续传。重新触发生成时，系统会自动跳过已完成的片段，只处理剩余部分。
+- Read the main [README.md](../README.md) for deployment and architecture notes.
+- Open the Jianying guide if you want to continue editing in Jianying.
+- File issues at [GitHub Issues](https://github.com/ArcReel/ArcReel/issues) if you hit bugs.
 
----
-
-## 下一步
-
-恭喜你完成了入门教程！接下来你可以：
-
-- 💰 查看 [Google GenAI 费用说明](google-genai-docs/Google视频&图片生成费用参考.md) 和 [火山方舟费用说明](ark-docs/火山方舟费用参考.md) 了解详细定价
-- 🐛 遇到问题？提交 [Issue](https://github.com/ArcReel/ArcReel/issues) 反馈
-- 💬 扫码加入飞书交流群，获取帮助和最新动态：
-
-<img src="assets/feishu-qr.png" alt="飞书交流群二维码" width="280">
-
-如果觉得项目有用，请给个 ⭐ Star 支持一下！
+If ArcReel is useful to you, starring the repository helps a lot.
