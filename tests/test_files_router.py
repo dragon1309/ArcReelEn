@@ -345,8 +345,8 @@ class TestFilesRouter:
         assert files._extract_step_number("not-match.md") == 0
         assert files._get_step_files("narration") == {1: "step1_segments.md"}
         assert files._get_step_files("drama") == {1: "step1_normalized_script.md"}
-        assert files._get_step_title("step1_segments.md") == "片段拆分"
-        assert files._get_step_title("step1_normalized_script.md") == "规范化剧本"
+        assert files._get_step_title("step1_segments.md") == "Segment Breakdown"
+        assert files._get_step_title("step1_normalized_script.md") == "Normalized Script"
         assert files._get_step_title("unknown.md") == "unknown.md"
 
         assert files._get_content_mode(tmp_path) == "drama"
@@ -375,7 +375,7 @@ class TestFilesRouter:
             assert change["action"] == "created"
             assert change["episode"] == 1
             assert change["important"] is True
-            assert "片段拆分" in change["label"]
+            assert "Segment Breakdown" in change["label"]
 
             mock_emit.reset_mock()
 

@@ -272,7 +272,7 @@ class TestProjectArchiveService:
         with pytest.raises(ProjectArchiveValidationError) as exc_info:
             service.import_project_archive(archive_path, uploaded_filename="broken.zip")
 
-        assert exc_info.value.detail == "导入包校验失败"
+        assert exc_info.value.detail == "Import archive validation failed"
         assert any("project.json" in error for error in exc_info.value.errors)
 
     def test_import_rejects_missing_script_reference(self, tmp_path):
@@ -403,7 +403,7 @@ class TestProjectArchiveService:
             )
 
         assert exc_info.value.status_code == 409
-        assert exc_info.value.detail == "检测到项目编号冲突"
+        assert exc_info.value.detail == "Project identifier conflict detected"
         assert exc_info.value.extra["conflict_project_name"] == "demo"
 
     def test_import_overwrite_replaces_existing_project(self, tmp_path):

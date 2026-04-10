@@ -81,7 +81,7 @@ class AssistantService:
         interrupted_count = await self.meta_store.interrupt_running_sessions()
         if interrupted_count > 0:
             logger.warning(
-                "服务启动时中断遗留运行中会话 count=%s",
+                "Interrupted leftover running sessions at service startup count=%s",
                 interrupted_count,
             )
 
@@ -182,7 +182,7 @@ class AssistantService:
         """Prepare prompt components: (text, sdk_prompt_or_none, echo_blocks_or_none)."""
         text = content.strip()
         if not text and not images:
-            raise ValueError("消息内容不能为空")
+            raise ValueError("Message content cannot be empty")
 
         if images:
             sdk_prompt = self._build_multimodal_prompt(text, images)

@@ -199,7 +199,7 @@ class TestProjectEventService:
                     "entity_type": "segment",
                     "action": "storyboard_ready",
                     "entity_id": "E1S01",
-                    "label": "分镜「E1S01」",
+                    "label": "Storyboard "E1S01"",
                     "focus": None,
                     "important": True,
                 }

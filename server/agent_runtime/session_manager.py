@@ -52,7 +52,7 @@ except ImportError:
 
 
 class SessionCapacityError(Exception):
-    """所有并发槽位已被 running 会话占满，无法创建新连接。"""
+    """Raised when all concurrency slots are occupied by running sessions."""
 
     pass
 
@@ -78,7 +78,7 @@ class ManagedSession:
     session_id: str  # sdk_session_id（已有会话）或临时 UUID（新会话等待中）
     client: Any  # ClaudeSDKClient
     status: SessionStatus = "idle"
-    project_name: str = ""  # 用于 _register_new_session
+    project_name: str = ""  # Used by _register_new_session
     sdk_id_event: asyncio.Event = field(default_factory=asyncio.Event)
     resolved_sdk_id: str | None = None  # consumer 设置，send_new_session 读取
     message_buffer: list[dict[str, Any]] = field(default_factory=list)
@@ -311,7 +311,7 @@ class SessionManager:
                     self.max_turns = int(raw)
                     return
         except Exception:
-            logger.warning("从 DB 加载 assistant 配置失败，回退到环境变量", exc_info=True)
+            logger.warning("Failed to load assistant config from the database; falling back to environment variables", exc_info=True)
         # Fallback to env var
         self._load_config()
 
@@ -576,7 +576,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
             if tool_name == "Write":
                 simulated = tool_input.get("content")
                 logger.info(
-                    "JSON 校验 hook: tool=Write file=%s content_len=%s",
+                    "JSON validation hook: tool=Write file=%s content_len=%s",
                     file_path,
                     len(simulated) if simulated else 0,
                 )
@@ -585,7 +585,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
                 new_string = tool_input.get("new_string", "")
                 if not old_string:
                     logger.info(
-                        "JSON 校验 hook: tool=Edit file=%s skip=old_string为空",
+                        "JSON validation hook: tool=Edit file=%s skip=old_string empty",
                         file_path,
                     )
                     return {}
@@ -598,7 +598,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
                 if _has_curly_quotes(new_string):
                     curly_found = [f"U+{ord(ch):04X}" for ch in new_string if ch in _CURLY_QUOTES]
                     logger.warning(
-                        "PreToolUse JSON 校验拦截(弯引号): file=%s curly=%s",
+                        "PreToolUse JSON validation blocked (curly quotes): file=%s curly=%s",
                         file_path,
                         curly_found[:5],
                     )
@@ -607,11 +607,11 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
                             "hookEventName": "PreToolUse",
                             "permissionDecision": "deny",
                             "permissionDecisionReason": (
-                                "操作被阻止：new_string 包含弯引号"
-                                "（\u201c 或 \u201d），"
-                                "这会破坏 JSON 格式。"
-                                "请将所有弯引号替换为标准 ASCII "
-                                "双引号 (U+0022) 后重试。"
+                                "Operation blocked: new_string contains curly quotes"
+                                " (\u201c or \u201d). "
+                                "This breaks JSON formatting."
+                                "Please replace all curly quotes with standard ASCII "
+                                "double quotes (U+0022) and try again."
                             ),
                         },
                     }
@@ -622,7 +622,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
                     current = resolved.read_text(encoding="utf-8")
                 except OSError as read_err:
                     logger.info(
-                        "JSON 校验 hook: tool=Edit file=%s skip=读取失败 error=%s",
+                        "JSON validation hook: tool=Edit file=%s skip=read_failed error=%s",
                         file_path,
                         read_err,
                     )
@@ -635,7 +635,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
                 if old_string not in current:
                     # Edit tool will fail on its own; no need to intervene.
                     logger.info(
-                        "JSON 校验 hook: tool=Edit file=%s skip=old_string未匹配 old_len=%d new_len=%d file_len=%d",
+                        "JSON validation hook: tool=Edit file=%s skip=old_string_not_matched old_len=%d new_len=%d file_len=%d",
                         file_path,
                         len(old_string),
                         len(new_string),
@@ -650,7 +650,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
                     simulated = current.replace(old_string, new_string, 1)
 
                 logger.info(
-                    "JSON 校验 hook: tool=Edit file=%s matched=True "
+                    "JSON validation hook: tool=Edit file=%s matched=True "
                     "old_len=%d new_len=%d simulated_len=%d replace_all=%s",
                     file_path,
                     len(old_string),
@@ -665,14 +665,14 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
             try:
                 json.loads(simulated)
                 logger.info(
-                    "JSON 校验 hook: tool=%s file=%s result=valid",
+                    "JSON validation hook: tool=%s file=%s result=valid",
                     tool_name,
                     file_path,
                 )
                 return {}
             except json.JSONDecodeError as exc:
                 logger.warning(
-                    "PreToolUse JSON 校验拦截: file=%s tool=%s error=%s",
+                    "PreToolUse JSON validation blocked: file=%s tool=%s error=%s",
                     file_path,
                     tool_name,
                     exc,
@@ -682,10 +682,10 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
                         "hookEventName": "PreToolUse",
                         "permissionDecision": "deny",
                         "permissionDecisionReason": (
-                            f"操作被阻止：此次 {tool_name} 会导致 {file_path} "
-                            f"变成无效 JSON。错误：{exc}。"
-                            "请检查你的输入内容中是否包含未转义的双引号或其他"
-                            "JSON 语法问题，修正后重试。"
+                            f"Operation blocked: this {tool_name} call would cause {file_path} "
+                            f"to become invalid JSON. Error: {exc}."
+                            "Please check whether your input contains unescaped double quotes or other "
+                            "JSON syntax problems, then fix them and try again."
                         ),
                     },
                 }
@@ -721,7 +721,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
                     tool_use_id,
                 )
             except Exception:
-                logger.exception("PostToolUse JSON 校验 hook 异常")
+                logger.exception("PostToolUse JSON validation hook failed")
                 return {}
 
         async def _json_post_validation_impl(
@@ -749,7 +749,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
             try:
                 json.loads(actual)
                 logger.info(
-                    "PostToolUse JSON 校验: tool=%s file=%s result=valid",
+                    "PostToolUse JSON validation: tool=%s file=%s result=valid",
                     tool_name,
                     file_path,
                 )
@@ -763,20 +763,20 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
                         backup_path.write_text(backup_content, encoding="utf-8")
                         restored = True
                         logger.warning(
-                            "PostToolUse JSON 校验拦截并恢复: file=%s tool=%s error=%s backup_restored=True",
+                            "PostToolUse JSON validation blocked and restored: file=%s tool=%s error=%s backup_restored=True",
                             file_path,
                             tool_name,
                             exc,
                         )
                     except OSError as write_err:
                         logger.error(
-                            "PostToolUse JSON 备份恢复失败: file=%s error=%s",
+                            "PostToolUse JSON backup restore failed: file=%s error=%s",
                             file_path,
                             write_err,
                         )
                 else:
                     logger.warning(
-                        "PostToolUse JSON 校验拦截(无备份): file=%s tool=%s error=%s",
+                        "PostToolUse JSON validation blocked (no backup): file=%s tool=%s error=%s",
                         file_path,
                         tool_name,
                         exc,
@@ -784,16 +784,16 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
 
                 if restored:
                     ctx = (
-                        f"⚠ JSON 损坏已检测并回滚：{tool_name} 导致 "
-                        f"{file_path} 变成无效 JSON（{exc}）。"
-                        "文件已恢复到编辑前状态，请修正后重试。"
+                        f"Warning: JSON corruption detected and rolled back: {tool_name} caused "
+                        f"{file_path} became invalid JSON ({exc})."
+                        "The file was restored to its pre-edit state. Please fix the issue and try again."
                     )
                 else:
                     ctx = (
-                        f"⚠ JSON 损坏已检测但无法恢复：{tool_name} 导致 "
-                        f"{file_path} 变成无效 JSON（{exc}）。"
-                        "文件当前仍为损坏状态（无可用备份或恢复写入失败），"
-                        "请先读取文件确认内容，再手动修正为合法 JSON。"
+                        f"Warning: JSON corruption detected but could not be restored: {tool_name} caused "
+                        f"{file_path} became invalid JSON ({exc})."
+                        "The file is still corrupted (no usable backup or restore write failed), "
+                        "please read the file first, confirm its contents, and repair it to valid JSON manually."
                     )
 
                 return {
@@ -861,12 +861,12 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
         try:
             await managed.client.query(prompt)
         except Exception:
-            logger.exception("新会话消息发送失败")
+            logger.exception("Failed to send message for new session")
             del self.sessions[temp_id]
             try:
                 await client.disconnect()
             except Exception as disconnect_err:
-                logger.warning("新会话断开连接失败: %s", disconnect_err)
+                logger.warning("Failed to disconnect new session: %s", disconnect_err)
             raise
 
         managed.consumer_task = asyncio.create_task(self._consume_messages(managed))
@@ -886,9 +886,9 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
 
         if not managed.sdk_id_event.is_set():
             if managed.consumer_task.done():
-                logger.error("consumer_task 提前退出，未获得 sdk_session_id temp_id=%s", temp_id)
+                logger.error("consumer_task exited early before sdk_session_id was received temp_id=%s", temp_id)
             else:
-                logger.error("等待 sdk_session_id 超时 temp_id=%s", temp_id)
+                logger.error("Timed out waiting for sdk_session_id temp_id=%s", temp_id)
             managed.cancel_pending_questions("session creation timed out")
             if managed.consumer_task and not managed.consumer_task.done():
                 managed.consumer_task.cancel()
@@ -897,8 +897,8 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
             try:
                 await client.disconnect()
             except Exception as disconnect_err:
-                logger.warning("清理断开连接失败: %s", disconnect_err)
-            raise TimeoutError("SDK 会话创建超时")
+                logger.warning("Cleanup disconnect failed: %s", disconnect_err)
+            raise TimeoutError("Timed out creating SDK session")
 
         sdk_id = managed.resolved_sdk_id
         assert sdk_id is not None
@@ -968,7 +968,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
             managed._cleanup_task = None
 
         if managed.status == "running":
-            raise ValueError("会话正在处理中，请等待当前回复完成后再发送新消息")
+            raise ValueError("The session is busy. Wait for the current reply to finish before sending another message")
 
         self._prune_transient_buffer(managed)
 
@@ -995,7 +995,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
         try:
             await managed.client.query(prompt)
         except Exception:
-            logger.exception("会话消息处理失败")
+            logger.exception("Session message handling failed")
             managed.pending_user_echoes.clear()
             managed.status = "error"
             await self.meta_store.update_status(session_id, "error")
@@ -1060,7 +1060,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
             await self._mark_session_terminal(managed, "interrupted", "session interrupted")
             raise
         except Exception:
-            logger.exception("会话消费循环异常")
+            logger.exception("Session consumer loop error")
             await self._mark_session_terminal(managed, "error", "session error")
             raise
 
@@ -1134,7 +1134,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
         self._schedule_cleanup(managed.session_id)
 
     def _schedule_cleanup(self, session_id: str) -> None:
-        """为非 running 会话调度延迟清理，延迟从配置读取。"""
+        """Schedule delayed cleanup for non-running sessions using the configured delay."""
         managed = self.sessions.get(session_id)
         if managed is None:
             return
@@ -1151,13 +1151,13 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
             # 会话已恢复活跃 → 跳过
             if m.status == "running":
                 return
-            logger.info("清理会话 session_id=%s status=%s", session_id, m.status)
+            logger.info("Cleaning up session session_id=%s status=%s", session_id, m.status)
             # 清除自身引用，避免 _disconnect_session 尝试 cancel/gather 当前任务
             m._cleanup_task = None
             try:
                 await self._disconnect_session(session_id, reason="cleanup timer")
             except Exception:
-                logger.warning("清理会话失败 session_id=%s", session_id, exc_info=True)
+                logger.warning("Session cleanup failed session_id=%s", session_id, exc_info=True)
 
         managed._cleanup_task = asyncio.create_task(_do_cleanup())
 
@@ -1202,7 +1202,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
         except TimeoutError:
             return False
         except Exception:
-            logger.warning("等待 Claude 子进程退出失败", exc_info=True)
+            logger.warning("Failed to wait for Claude subprocess to exit", exc_info=True)
             return False
         return self._process_returncode(process) is not None
 
@@ -1217,7 +1217,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
         """Force terminate lingering Claude CLI process."""
         if process is None:
             logger.error(
-                "会话断开失败且无法访问底层进程 session_id=%s cause=%s",
+                "Session disconnect failed and the underlying process was inaccessible session_id=%s cause=%s",
                 session_id,
                 cause,
             )
@@ -1227,7 +1227,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
             return True
 
         logger.warning(
-            "会话断开异常，尝试强制终止 Claude 子进程 session_id=%s pid=%s cause=%s",
+            "Session disconnect errored; attempting to force-terminate Claude subprocess session_id=%s pid=%s cause=%s",
             session_id,
             pid,
             cause,
@@ -1238,7 +1238,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
             return True
         except Exception:
             logger.warning(
-                "发送 SIGTERM 失败 session_id=%s pid=%s",
+                "Failed to send SIGTERM session_id=%s pid=%s",
                 session_id,
                 pid,
                 exc_info=True,
@@ -1246,7 +1246,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
         else:
             if await self._wait_for_process_exit(process, timeout=self._TERMINATE_WAIT_TIMEOUT):
                 logger.warning(
-                    "Claude 子进程已通过 SIGTERM 退出 session_id=%s pid=%s returncode=%s",
+                    "Claude subprocess exited via SIGTERM session_id=%s pid=%s returncode=%s",
                     session_id,
                     pid,
                     self._process_returncode(process),
@@ -1254,7 +1254,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
                 return True
 
         logger.error(
-            "Claude 子进程在 SIGTERM 后仍存活，发送 SIGKILL session_id=%s pid=%s",
+            "Claude subprocess remained alive after SIGTERM; sending SIGKILL session_id=%s pid=%s",
             session_id,
             pid,
         )
@@ -1264,7 +1264,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
             return True
         except Exception:
             logger.error(
-                "发送 SIGKILL 失败 session_id=%s pid=%s",
+                "Failed to send SIGKILL session_id=%s pid=%s",
                 session_id,
                 pid,
                 exc_info=True,
@@ -1273,7 +1273,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
 
         if await self._wait_for_process_exit(process, timeout=self._KILL_WAIT_TIMEOUT):
             logger.warning(
-                "Claude 子进程已通过 SIGKILL 退出 session_id=%s pid=%s returncode=%s",
+                "Claude subprocess exited via SIGKILL session_id=%s pid=%s returncode=%s",
                 session_id,
                 pid,
                 self._process_returncode(process),
@@ -1281,7 +1281,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
             return True
 
         logger.error(
-            "Claude 子进程在 SIGKILL 后仍未退出 session_id=%s pid=%s",
+            "Claude subprocess still did not exit after SIGKILL session_id=%s pid=%s",
             session_id,
             pid,
         )
@@ -1302,7 +1302,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
         reason: str = "session closed",
         interrupt_running: bool = False,
     ) -> None:
-        """安全断开会话，确认子进程退出后再释放槽位。"""
+        """Safely disconnect a session and release its slot after the subprocess exits."""
         if session_id in self._disconnecting:
             return
         managed = self.sessions.get(session_id)
@@ -1339,16 +1339,16 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
                     timeout=self._INTERRUPT_TIMEOUT,
                 )
             except TimeoutError:
-                logger.warning("中断会话超时 session_id=%s", session_id)
+                logger.warning("Interrupt session timed out session_id=%s", session_id)
             except Exception:
-                logger.warning("中断会话失败 session_id=%s", session_id, exc_info=True)
+                logger.warning("Interrupt session failed session_id=%s", session_id, exc_info=True)
 
             managed.status = "interrupted"
             try:
                 await self.meta_store.update_status(session_id, "interrupted")
             except Exception:
                 logger.warning(
-                    "更新会话中断状态失败 session_id=%s",
+                    "Failed to update interrupted session state session_id=%s",
                     session_id,
                     exc_info=True,
                 )
@@ -1359,7 +1359,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
         process = self._get_client_process(managed.client)
         pid = self._process_pid(process)
         logger.info(
-            "开始断开会话 session_id=%s status=%s pid=%s reason=%s",
+            "Starting session disconnect session_id=%s status=%s pid=%s reason=%s",
             session_id,
             managed.status,
             pid,
@@ -1382,13 +1382,13 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
             closed = process is None or self._process_returncode(process) is not None
             if not closed:
                 logger.warning(
-                    "disconnect 返回后 Claude 子进程仍存活 session_id=%s pid=%s",
+                    "Claude subprocess still alive after disconnect returned session_id=%s pid=%s",
                     session_id,
                     pid,
                 )
         else:
             logger.warning(
-                "优雅断开会话失败 session_id=%s pid=%s reason=%s error=%s",
+                "Graceful session disconnect failed session_id=%s pid=%s reason=%s error=%s",
                 session_id,
                 pid,
                 reason,
@@ -1412,36 +1412,36 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
         self.sessions.pop(session_id, None)
         self._connect_locks.pop(session_id, None)
         logger.info(
-            "会话已断开 session_id=%s pid=%s returncode=%s",
+            "Session disconnected session_id=%s pid=%s returncode=%s",
             session_id,
             pid,
             self._process_returncode(process),
         )
 
     async def _get_cleanup_delay(self) -> int:
-        """返回会话清理延迟秒数，默认 300（5 分钟）。"""
+        """Return the session cleanup delay in seconds. Defaults to 300."""
         try:
             async with async_session_factory() as session:
                 svc = ConfigService(session)
                 val = await svc.get_setting("agent_session_cleanup_delay_seconds", "300")
             return max(int(val), 10)
         except Exception:
-            logger.warning("读取 cleanup delay 配置失败，使用默认值", exc_info=True)
+            logger.warning("Failed to read cleanup delay config; using default", exc_info=True)
             return 300
 
     async def _get_max_concurrent(self) -> int:
-        """返回最大并发会话数，默认 5。"""
+        """Return the maximum number of concurrent sessions. Defaults to 5."""
         try:
             async with async_session_factory() as session:
                 svc = ConfigService(session)
                 val = await svc.get_setting("agent_max_concurrent_sessions", "5")
             return max(int(val), 1)
         except Exception:
-            logger.warning("读取 max_concurrent 配置失败，使用默认值", exc_info=True)
+            logger.warning("Failed to read max_concurrent config; using default", exc_info=True)
             return 5
 
     async def _ensure_capacity(self) -> None:
-        """确保有空余并发槽位，必要时淘汰最久未活跃的非 running 会话。"""
+        """Ensure capacity exists, evicting the least recently active non-running session if needed."""
         max_concurrent = await self._get_max_concurrent()
         active = [s for s in self.sessions.values() if s.client is not None and s.session_id not in self._disconnecting]
 
@@ -1457,7 +1457,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
         if evictable:
             victim = evictable[0]
             logger.info(
-                "并发上限，淘汰 session_id=%s (status=%s)",
+                "Concurrency limit reached; evicting session_id=%s (status=%s)",
                 victim.session_id,
                 victim.status,
             )
@@ -1468,20 +1468,20 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
                 )
             except Exception as exc:
                 logger.error(
-                    "淘汰会话失败，无法释放并发槽位 session_id=%s",
+                    "Failed to evict session; could not free a concurrency slot session_id=%s",
                     victim.session_id,
                     exc_info=True,
                 )
-                raise SessionCapacityError("存在未能关闭的空闲会话，当前无法释放并发槽位，请稍后重试") from exc
+                raise SessionCapacityError("There are idle sessions that could not be closed, so no concurrency slot can be freed right now. Please try again later") from exc
             return
 
         # 所有会话都在 running → 拒绝
-        raise SessionCapacityError(f"当前有{len(active)}个正在进行的会话，已达到最大上限，请稍后重试")
+        raise SessionCapacityError(f"There are currently {len(active)} active sessions, which is the maximum limit. Please try again later")
 
     _PATROL_INTERVAL = 300  # 5 分钟
 
     async def _patrol_once(self) -> None:
-        """单次巡检：清理所有超时的非 running 会话。"""
+        """Run one patrol pass and clean up timed-out non-running sessions."""
         cleanup_delay = await self._get_cleanup_delay()
         now = time.monotonic()
         for sid, managed in list(self.sessions.items()):
@@ -1489,27 +1489,27 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
                 continue
             activity_age = now - (managed.last_activity or 0)
             if activity_age > cleanup_delay * 2:
-                logger.info("巡检兜底清理会话 session_id=%s status=%s", sid, managed.status)
+                logger.info("Patrol fallback cleaning up session session_id=%s status=%s", sid, managed.status)
                 try:
                     await self._disconnect_session(sid, reason="patrol cleanup")
                 except Exception:
                     logger.warning(
-                        "巡检兜底清理失败 session_id=%s",
+                        "Patrol fallback cleanup failed session_id=%s",
                         sid,
                         exc_info=True,
                     )
 
     async def _patrol_loop(self) -> None:
-        """后台定期巡检循环。"""
+        """Background patrol loop."""
         while True:
             await asyncio.sleep(self._PATROL_INTERVAL)
             try:
                 await self._patrol_once()
             except Exception:
-                logger.warning("巡检循环异常", exc_info=True)
+                logger.warning("Patrol loop error", exc_info=True)
 
     def start_patrol(self) -> None:
-        """启动巡检后台任务（应在应用 startup 时调用）。"""
+        """Start the patrol background task. Call this during application startup."""
         self._patrol_task = asyncio.create_task(self._patrol_loop())
 
     @staticmethod
@@ -1560,7 +1560,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
             p = Path(file_path)
             resolved = (project_cwd / p).resolve() if not p.is_absolute() else p.resolve()
         except (ValueError, OSError):
-            return False, "访问被拒绝：无效的文件路径"
+            return False, "Access denied: invalid file path"
 
         # 1. Within project directory
         if resolved.is_relative_to(project_cwd):
@@ -1568,15 +1568,15 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
                 ext = resolved.suffix.lower()
                 if ext not in self._WRITABLE_EXTENSIONS:
                     return False, (
-                        f"不允许创建/编辑 {ext} 类型的文件。"
-                        "Write/Edit 仅限 .json、.md、.txt 文件。"
-                        "如果你需要执行数据处理，请使用现有的 skill 脚本。"
+                        f"Creating/editing {ext} files is not allowed."
+                        "Write/Edit is limited to .json, .md, and .txt files."
+                        "If you need to process data, use an existing skill script."
                     )
             return True, None
 
         # 2. Write tools: only project directory allowed
         if tool_name in self._WRITE_TOOLS:
-            return False, "访问被拒绝：不允许访问当前项目目录之外的路径"
+            return False, "Access denied: paths outside the current project directory are not allowed"
 
         # 3. Read tools: allow entire project_root for shared resources
         #    Sensitive files protected by settings.json deny rules
@@ -1605,7 +1605,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
         if resolved_str.startswith(_SDK_TMP_PREFIXES) and "tasks" in resolved.parts:
             return True, None
 
-        return False, "访问被拒绝：不允许访问当前项目和公共目录之外的路径"
+        return False, "Access denied: paths outside the current project and shared directories are not allowed"
 
     async def _handle_ask_user_question(
         self,
@@ -1690,13 +1690,13 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
             # by allowed_tools or settings.json allow rules.
             if PermissionResultDeny is not None:
                 hint = (
-                    f"未授权的工具调用: {tool_name}"
+                    f"Unauthorized tool call: {tool_name}"
                     f"({json.dumps(input_data, ensure_ascii=False)[:200]})\n"
-                    "当前 Bash 白名单仅允许以下命令:\n"
-                    "  - python .claude/skills/<skill>/scripts/<script>.py <args>（必须用相对路径）\n"
+                    "The current Bash allowlist only permits these commands:\n"
+                    "  - python .claude/skills/<skill>/scripts/<script>.py <args> (must use a relative path)\n"
                     "  - ffmpeg / ffprobe\n"
-                    "其他 Bash 命令均不可用。"
-                    "请检查命令格式是否匹配白名单规则。"
+                    "All other Bash commands are unavailable."
+                    "Check whether the command format matches the allowlist rules."
                 )
                 return PermissionResultDeny(message=hint)
             return PermissionResultAllow(updated_input=input_data)
@@ -1926,11 +1926,11 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
         """Resolve AskUserQuestion answers for a running session."""
         managed = self.sessions.get(session_id)
         if managed is None:
-            raise ValueError("会话未运行或无待回答问题")
+            raise ValueError("The session is not running or has no pending question")
         if managed.status != "running":
-            raise ValueError("会话未运行或无待回答问题")
+            raise ValueError("The session is not running or has no pending question")
         if not managed.resolve_pending_question(question_id, answers):
-            raise ValueError("未找到待回答的问题")
+            raise ValueError("No pending question was found")
 
     async def subscribe(self, session_id: str, replay_buffer: bool = True) -> asyncio.Queue:
         """Subscribe to session messages. Returns queue for SSE."""
@@ -1981,7 +1981,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
                             await managed.client.interrupt()
                         except Exception:
                             logger.warning(
-                                "优雅关闭时中断会话失败 session_id=%s",
+                                "Interrupt session failed during graceful shutdown session_id=%s",
                                 session_id,
                                 exc_info=True,
                             )
@@ -1997,7 +1997,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
                 )
             except Exception:
                 logger.warning(
-                    "优雅关闭会话失败 session_id=%s",
+                    "Graceful session shutdown failed session_id=%s",
                     session_id,
                     exc_info=True,
                 )

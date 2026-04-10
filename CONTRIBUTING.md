@@ -1,63 +1,64 @@
-# 贡献指南
+# Contributing
 
-欢迎贡献代码、报告 Bug 或提出功能建议！
+Bug reports, feature ideas, and pull requests are all welcome.
 
-## 本地开发环境
+## Local Development
 
 ```bash
-# 前置要求：Python 3.12+, Node.js 20+, uv, pnpm, ffmpeg
+# Requirements: Python 3.12+, Node.js 20+, uv, pnpm, ffmpeg
 
-# 安装依赖
+# Install dependencies
 uv sync
 cd frontend && pnpm install && cd ..
 
-# 初始化数据库
+# Initialize the database
 uv run alembic upgrade head
 
-# 启动后端 (终端 1)
+# Start the backend (terminal 1)
 uv run uvicorn server.app:app --reload --port 1241
 
-# 启动前端 (终端 2)
+# Start the frontend (terminal 2)
 cd frontend && pnpm dev
 
-# 访问 http://localhost:5173
+# Open http://localhost:5173
 ```
 
-## 运行测试
+## Run Tests
 
 ```bash
-# 后端测试
+# Backend tests
 python -m pytest
 
-# 前端类型检查 + 测试
+# Frontend typecheck + tests
 cd frontend && pnpm check
 ```
 
-## 代码质量
+## Code Quality
 
-**Lint & Format（ruff）：**
+**Lint & format (ruff):**
 
 ```bash
 uv run ruff check . && uv run ruff format .
 ```
 
-- 规则集：`E`/`F`/`I`/`UP`，忽略 `E402` 和 `E501`
-- line-length：120
-- CI 中强制检查：`ruff check . && ruff format --check .`
+- Enabled rule sets: `E`, `F`, `I`, `UP`
+- Ignored rules: `E402`, `E501`
+- Line length: `120`
+- CI enforcement: `ruff check . && ruff format --check .`
 
-**测试覆盖率：**
+**Test coverage:**
 
-- CI 要求 ≥80%
-- `asyncio_mode = "auto"`（无需手动标记 async 测试）
+- CI target: at least `80%`
+- `asyncio_mode = "auto"` so async tests do not need manual markers
 
-## 提交规范
+## Commit Messages
 
-Commit message 采用 [Conventional Commits](https://www.conventionalcommits.org/) 格式：
+Use the [Conventional Commits](https://www.conventionalcommits.org/) format:
 
-```
-feat: 新增功能描述
-fix: 修复问题描述
-refactor: 重构描述
-docs: 文档变更
-chore: 构建/工具变更
+```text
+feat: describe a new feature
+fix: describe a bug fix
+refactor: describe a refactor
+docs: describe a docs change
+chore: describe a build/tooling change
 ```
