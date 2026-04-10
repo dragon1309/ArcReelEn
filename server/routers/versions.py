@@ -1,8 +1,4 @@
-"""
-版本管理 API 路由
-
-处理版本查询和还原请求。
-"""
+"""Version-management API routes."""
 
 import asyncio
 import logging
@@ -20,7 +16,7 @@ from server.auth import CurrentUser
 
 router = APIRouter()
 
-# 初始化项目管理器
+# Shared project manager instance.
 pm = ProjectManager(PROJECT_ROOT / "projects")
 
 _RESOURCE_FILE_PATTERNS: dict[str, tuple[str, str]] = {
@@ -36,7 +32,7 @@ def get_project_manager() -> ProjectManager:
 
 
 def get_version_manager(project_name: str) -> VersionManager:
-    """获取项目的版本管理器"""
+    """Return the version manager for a project."""
     project_path = get_project_manager().get_project_path(project_name)
     return VersionManager(project_path)
 
@@ -46,10 +42,10 @@ def _resolve_resource_path(
     resource_id: str,
     project_path: Path,
 ) -> tuple[Path, str]:
-    """返回 (current_file_absolute, relative_file_path)，资源类型无效时抛出 HTTPException。"""
+    """Return ``(current_file_absolute, relative_file_path)`` for a resource."""
     pattern = _RESOURCE_FILE_PATTERNS.get(resource_type)
     if pattern is None:
-        raise HTTPException(status_code=400, detail=f"不支持的资源类型: {resource_type}")
+        raise HTTPException(status_code=400, detail=f"Unsupported resource type: {resource_type}")
     subdir, name_tpl = pattern
     name = name_tpl.format(id=resource_id)
     return project_path / subdir / name, f"{subdir}/{name}"
@@ -77,7 +73,7 @@ def _sync_storyboard_metadata(
         except KeyError:
             continue
         except Exception as exc:
-            logger.warning("同步分镜元数据失败: %s", exc)
+            logger.warning("Failed to sync storyboard metadata: %s", exc)
             continue
 
 
@@ -88,24 +84,24 @@ def _sync_metadata(
     file_path: str,
     project_path: Path,
 ) -> None:
-    """还原后同步元数据，确保引用指向统一文件路径。"""
+    """Sync metadata after restore so references point to the canonical file path."""
     if resource_type == "characters":
         try:
             with project_change_source("webui"):
                 get_project_manager().update_project_character_sheet(project_name, resource_id, file_path)
         except KeyError:
-            pass  # 角色条目可能已从 project.json 删除，跳过元数据同步
+            pass  # The character entry may already be gone from project.json.
     elif resource_type == "clues":
         try:
             with project_change_source("webui"):
                 get_project_manager().update_clue_sheet(project_name, resource_id, file_path)
         except KeyError:
-            pass  # 线索条目可能已从 project.json 删除，跳过元数据同步
+            pass  # The clue entry may already be gone from project.json.
     elif resource_type == "storyboards":
         _sync_storyboard_metadata(project_name, resource_id, file_path, project_path)
 
 
-# ==================== 版本查询 ====================
+# ==================== Version query ====================
 
 
 @router.get("/projects/{project_name}/versions/{resource_type}/{resource_id}")
@@ -115,14 +111,7 @@ async def get_versions(
     resource_id: str,
     _user: CurrentUser,
 ):
-    """
-    获取资源的所有版本列表
-
-    Args:
-        project_name: 项目名称
-        resource_type: 资源类型 (storyboards, videos, characters, clues)
-        resource_id: 资源 ID
-    """
+    """Return the full version list for a resource."""
     try:
 
         def _sync():
@@ -137,11 +126,11 @@ async def get_versions(
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        logger.exception("请求处理失败")
+        logger.exception("Request handling failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==================== 版本还原 ====================
+# ==================== Version restore ====================
 
 
 @router.post("/projects/{project_name}/versions/{resource_type}/{resource_id}/restore/{version}")
@@ -152,17 +141,7 @@ async def restore_version(
     version: int,
     _user: CurrentUser,
 ):
-    """
-    切换到指定版本
-
-    会将指定版本复制到当前路径，并把当前版本指针切换到该版本。
-
-    Args:
-        project_name: 项目名称
-        resource_type: 资源类型
-        resource_id: 资源 ID
-        version: 要还原的版本号
-    """
+    """Restore a resource to the requested version."""
     try:
 
         def _sync():
@@ -179,7 +158,7 @@ async def restore_version(
 
             _sync_metadata(resource_type, project_name, resource_id, file_path, project_path)
 
-            # 计算还原后文件的 fingerprint；视频还原时同步删除缩略图（内容已失效）
+            # Compute fingerprints after restore. For videos, also clear the stale thumbnail.
             asset_fingerprints: dict[str, int] = {}
             if current_file.exists():
                 asset_fingerprints[file_path] = current_file.stat().st_mtime_ns
@@ -188,7 +167,7 @@ async def restore_version(
                 thumbnail_path = project_path / "thumbnails" / f"scene_{resource_id}.jpg"
                 thumbnail_key = f"thumbnails/scene_{resource_id}.jpg"
                 thumbnail_path.unlink(missing_ok=True)
-                # fingerprint=0 通知前端该文件已失效（poster 消失直到重新生成）
+                # fingerprint=0 tells the frontend the thumbnail is now invalid.
                 asset_fingerprints[thumbnail_key] = 0
 
             return {
@@ -207,5 +186,5 @@ async def restore_version(
     except HTTPException:
         raise
     except Exception as e:
-        logger.exception("请求处理失败")
+        logger.exception("Request handling failed")
         raise HTTPException(status_code=500, detail=str(e))

@@ -10,7 +10,7 @@ class _FakePM:
         self.projects = {
             "demo": {
                 "clues": {
-                    "玉佩": {
+                    "JadePendant": {
                         "type": "prop",
                         "description": "old",
                         "importance": "major",
@@ -60,19 +60,19 @@ class TestCluesRouter:
         with _client(monkeypatch, fake_pm) as client:
             add_resp = client.post(
                 "/api/v1/projects/demo/clues",
-                json={"name": "祠堂", "clue_type": "location", "description": "阴森", "importance": "major"},
+                json={"name": "Shrine", "clue_type": "location", "description": "ominous", "importance": "major"},
             )
             assert add_resp.status_code == 200
             assert add_resp.json()["clue"]["type"] == "location"
 
             patch_resp = client.patch(
-                "/api/v1/projects/demo/clues/玉佩",
+                "/api/v1/projects/demo/clues/JadePendant",
                 json={"clue_type": "prop", "description": "new", "importance": "minor", "clue_sheet": "clues/a.png"},
             )
             assert patch_resp.status_code == 200
             assert patch_resp.json()["clue"]["importance"] == "minor"
 
-            delete_resp = client.delete("/api/v1/projects/demo/clues/祠堂")
+            delete_resp = client.delete("/api/v1/projects/demo/clues/Shrine")
             assert delete_resp.status_code == 200
 
     def test_error_mapping(self, monkeypatch):
@@ -91,13 +91,13 @@ class TestCluesRouter:
             assert missing.status_code == 404
 
             bad_patch_type = client.patch(
-                "/api/v1/projects/demo/clues/玉佩",
+                "/api/v1/projects/demo/clues/JadePendant",
                 json={"clue_type": "bad"},
             )
             assert bad_patch_type.status_code == 400
 
             bad_importance = client.patch(
-                "/api/v1/projects/demo/clues/玉佩",
+                "/api/v1/projects/demo/clues/JadePendant",
                 json={"importance": "bad"},
             )
             assert bad_importance.status_code == 400

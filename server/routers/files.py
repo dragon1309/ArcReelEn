@@ -22,7 +22,7 @@ from server.auth import CurrentUser
 
 router = APIRouter()
 
-# 初始化项目管理器
+# Initialize the project manager.
 pm = ProjectManager(PROJECT_ROOT / "projects")
 
 
@@ -30,7 +30,7 @@ def get_project_manager() -> ProjectManager:
     return pm
 
 
-# 允许的文件类型
+# Allowed file types.
 ALLOWED_EXTENSIONS = {
     "source": [".txt", ".md", ".doc", ".docx"],
     "character": [".png", ".jpg", ".jpeg", ".webp"],
@@ -52,7 +52,7 @@ async def serve_project_file(project_name: str, path: str, request: Request):
             if not file_path.exists():
                 raise HTTPException(status_code=404, detail=f"File not found: {path}")
 
-            # 安全检查：确保路径在项目目录内
+            # Security check: make sure the path stays inside the project directory.
             try:
                 file_path.resolve().relative_to(project_dir.resolve())
             except ValueError:
@@ -62,7 +62,7 @@ async def serve_project_file(project_name: str, path: str, request: Request):
 
         file_path = await asyncio.to_thread(_sync)
 
-        # 内容寻址缓存：带 ?v= 参数或 versions/ 路径时设 immutable
+        # Content-addressed cache: treat versioned URLs as immutable.
         headers = {}
         if request.query_params.get("v") or path.startswith("versions/"):
             headers["Cache-Control"] = "public, max-age=31536000, immutable"
@@ -77,18 +77,18 @@ async def upload_file(
     project_name: str, upload_type: str, _user: CurrentUser, file: UploadFile = File(...), name: str = None
 ):
     """
-    上传文件
+    Upload a file.
 
     Args:
-        project_name: 项目名称
-        upload_type: 上传类型 (source/character/clue/storyboard)
-        file: 上传的文件
-        name: 可选，用于角色/线索名称，或分镜 ID（自动更新元数据）
+        project_name: Project name.
+        upload_type: Upload type (source/character/clue/storyboard).
+        file: Uploaded file.
+        name: Optional character/clue name or storyboard id for metadata updates.
     """
     if upload_type not in ALLOWED_EXTENSIONS:
         raise HTTPException(status_code=400, detail=f"Invalid upload type: {upload_type}")
 
-    # 检查文件扩展名
+    # Validate the file extension.
     ext = Path(file.filename).suffix.lower()
     if ext not in ALLOWED_EXTENSIONS[upload_type]:
         raise HTTPException(
@@ -102,13 +102,13 @@ async def upload_file(
         def _sync():
             project_dir = get_project_manager().get_project_path(project_name)
 
-            # 确定目标目录
+            # Resolve the target directory.
             if upload_type == "source":
                 target_dir = project_dir / "source"
                 filename = file.filename
             elif upload_type == "character":
                 target_dir = project_dir / "characters"
-                # 统一保存为 PNG，且使用稳定文件名（避免 jpg/png 不一致导致版本还原/引用异常）
+                # Always save as PNG with a stable filename to avoid reference/version mismatches.
                 if name:
                     filename = f"{name}.png"
                 else:
@@ -126,7 +126,7 @@ async def upload_file(
                 else:
                     filename = f"{Path(file.filename).stem}.png"
             elif upload_type == "storyboard":
-                # 注意：目录为 storyboards（复数），而不是 storyboard
+                # Note: the directory is storyboards (plural), not storyboard.
                 target_dir = project_dir / "storyboards"
                 if name:
                     filename = f"scene_{name}.png"
@@ -138,7 +138,7 @@ async def upload_file(
 
             target_dir.mkdir(parents=True, exist_ok=True)
 
-            # 保存文件（大于 2MB 时压缩为 JPEG，否则校验后原样保存）
+            # Save the file. Large images are normalized instead of being stored raw.
             nonlocal content
             if upload_type in ("character", "character_ref", "clue", "storyboard"):
                 try:
@@ -151,7 +151,7 @@ async def upload_file(
             with open(target_path, "wb") as f:
                 f.write(content)
 
-            # 更新元数据
+            # Update metadata.
             if upload_type == "source":
                 relative_path = f"source/{filename}"
             elif upload_type == "character":
@@ -172,7 +172,7 @@ async def upload_file(
                             project_name, name, f"characters/{filename}"
                         )
                 except KeyError:
-                    pass  # 角色不存在，忽略
+                    pass  # Ignore missing characters.
 
             if upload_type == "character_ref" and name:
                 try:
@@ -181,7 +181,7 @@ async def upload_file(
                             project_name, name, f"characters/refs/{filename}"
                         )
                 except KeyError:
-                    pass  # 角色不存在，忽略
+                    pass  # Ignore missing characters.
 
             if upload_type == "clue" and name:
                 try:
@@ -192,7 +192,7 @@ async def upload_file(
                             f"clues/{filename}",
                         )
                 except KeyError:
-                    pass  # 线索不存在，忽略
+                    pass  # Ignore missing clues.
 
             return {
                 "success": True,
@@ -271,7 +271,7 @@ async def get_source_file(project_name: str, filename: str, _user: CurrentUser):
             if not source_path.exists():
                 raise HTTPException(status_code=404, detail=f"File does not exist: {filename}")
 
-            # 安全检查：确保路径在项目目录内
+            # Security check: make sure the path stays inside the project directory.
             try:
                 source_path.resolve().relative_to(project_dir.resolve())
             except ValueError:
@@ -306,7 +306,7 @@ async def update_source_file(
             source_dir.mkdir(parents=True, exist_ok=True)
             source_path = source_dir / filename
 
-            # 安全检查：确保路径在项目目录内
+            # Security check: make sure the path stays inside the project directory.
             try:
                 source_path.resolve().relative_to(project_dir.resolve())
             except ValueError:
@@ -337,7 +337,7 @@ async def delete_source_file(project_name: str, filename: str, _user: CurrentUse
             project_dir = get_project_manager().get_project_path(project_name)
             source_path = project_dir / "source" / filename
 
-            # 安全检查：确保路径在项目目录内
+            # Security check: make sure the path stays inside the project directory.
             try:
                 source_path.resolve().relative_to(project_dir.resolve())
             except ValueError:
@@ -360,7 +360,7 @@ async def delete_source_file(project_name: str, filename: str, _user: CurrentUse
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==================== 草稿文件管理 ====================
+# ==================== Draft file management ====================
 
 
 @router.get("/projects/{project_name}/drafts")
@@ -485,7 +485,7 @@ async def update_draft_content(
             is_new = not draft_path.exists()
             draft_path.write_text(content, encoding="utf-8")
 
-            # 发射 draft 事件通知前端
+            # Emit a draft event so the frontend can refresh.
             action = "created" if is_new else "updated"
             label_prefix = "Segment Breakdown" if content_mode == "narration" else "Normalized Script"
             change = {
@@ -540,19 +540,19 @@ async def delete_draft(project_name: str, episode: int, step_num: int, _user: Cu
         raise HTTPException(status_code=404, detail=f"Project '{project_name}' does not exist")
 
 
-# ==================== 风格参考图管理 ====================
+# ==================== Style reference image management ====================
 
 
 @router.post("/projects/{project_name}/style-image")
 async def upload_style_image(project_name: str, _user: CurrentUser, file: UploadFile = File(...)):
     """
-    上传风格参考图并分析风格
+    Upload a style reference image and analyze its style.
 
-    1. 保存图片到 projects/{project_name}/style_reference.png
-    2. 调用 Gemini API 分析风格
-    3. 更新 project.json 的 style_image 和 style_description 字段
+    1. Save the image to projects/{project_name}/style_reference.png
+    2. Call the Gemini API to analyze the style
+    3. Update style_image and style_description in project.json
     """
-    # 检查文件类型
+    # Validate the file type.
     ext = Path(file.filename).suffix.lower()
     if ext not in [".png", ".jpg", ".jpeg", ".webp"]:
         raise HTTPException(
@@ -579,7 +579,7 @@ async def upload_style_image(project_name: str, _user: CurrentUser, file: Upload
 
         output_path, style_filename = await asyncio.to_thread(_sync_prepare)
 
-        # 调用 TextGenerator 分析风格（自动追踪用量）
+        # Use TextGenerator to analyze the style and track usage automatically.
         from lib.text_backends.base import ImageInput, TextGenerationRequest, TextTaskType
         from lib.text_backends.prompts import STYLE_ANALYSIS_PROMPT
         from lib.text_generator import TextGenerator
@@ -592,7 +592,7 @@ async def upload_style_image(project_name: str, _user: CurrentUser, file: Upload
         style_description = result.text
 
         def _sync_save():
-            # 更新 project.json
+            # Update project.json.
             project_data = get_project_manager().load_project(project_name)
             project_data["style_image"] = style_filename
             project_data["style_description"] = style_description
@@ -620,20 +620,20 @@ async def upload_style_image(project_name: str, _user: CurrentUser, file: Upload
 @router.delete("/projects/{project_name}/style-image")
 async def delete_style_image(project_name: str, _user: CurrentUser):
     """
-    删除风格参考图及相关字段
+    Delete the style reference image and its related fields.
     """
     try:
 
         def _sync():
             project_dir = get_project_manager().get_project_path(project_name)
 
-            # 删除图片文件（兼容所有可能的后缀）
+            # Delete the image file across all supported suffixes.
             for suffix in (".jpg", ".jpeg", ".png", ".webp"):
                 image_path = project_dir / f"style_reference{suffix}"
                 if image_path.exists():
                     image_path.unlink()
 
-            # 清除 project.json 中的相关字段
+            # Clear the related fields from project.json.
             project_data = get_project_manager().load_project(project_name)
             project_data.pop("style_image", None)
             project_data.pop("style_description", None)
@@ -658,7 +658,7 @@ async def update_style_description(
     project_name: str, _user: CurrentUser, style_description: str = Body(..., embed=True)
 ):
     """
-    更新风格描述（手动编辑）
+    Update the style description manually.
     """
     try:
 

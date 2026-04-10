@@ -40,10 +40,10 @@ pm = ProjectManager(PROJECT_ROOT / "projects")
 rate_limiter = get_shared_rate_limiter()
 logger = logging.getLogger(__name__)
 
-# 按 (channel, provider_name, model) 缓存 Backend 实例，避免每次任务重建 API 客户端
+# Cache backend instances by (channel, provider_name, model) to avoid rebuilding API clients per task.
 _backend_cache: dict[tuple[str, ...], Any] = {}
 
-# 各供应商默认视频分辨率
+# Default video resolutions by provider.
 DEFAULT_VIDEO_RESOLUTION: dict[str, str] = {
     PROVIDER_GEMINI: "1080p",
     PROVIDER_ARK: "720p",
@@ -51,7 +51,7 @@ DEFAULT_VIDEO_RESOLUTION: dict[str, str] = {
     PROVIDER_OPENAI: "720p",
 }
 
-# 新 provider_id → 旧 backend registry name 的映射
+# Mapping from new provider_id values to legacy backend registry names.
 _PROVIDER_ID_TO_BACKEND: dict[str, str] = {
     "gemini-aistudio": PROVIDER_GEMINI,
     "gemini-vertex": PROVIDER_GEMINI,
@@ -67,12 +67,12 @@ def get_project_manager() -> ProjectManager:
 
 
 def invalidate_backend_cache() -> None:
-    """清空 VideoBackend 实例缓存。在配置变更后调用。"""
+    """Clear the cached backend instances after configuration changes."""
     _backend_cache.clear()
 
 
 def _parse_project_backend(raw: str | None) -> tuple[str | None, str | None]:
-    """解析 project.json 中 ``video_backend`` / ``image_backend`` 的 ``"provider/model"`` 格式。"""
+    """Parse ``video_backend`` / ``image_backend`` values in ``provider/model`` format from project.json."""
     if not raw:
         return None, None
     if "/" in raw:
@@ -82,7 +82,7 @@ def _parse_project_backend(raw: str | None) -> tuple[str | None, str | None]:
 
 
 async def _create_custom_backend(provider_name: str, model_id: str | None, media_type: str):
-    """自定义供应商的 backend 创建路径。"""
+    """Create a backend for a custom provider."""
     from lib.custom_provider import parse_provider_id
     from lib.custom_provider.factory import create_custom_backend
     from lib.db import async_session_factory
@@ -93,9 +93,9 @@ async def _create_custom_backend(provider_name: str, model_id: str | None, media
         db_id = parse_provider_id(provider_name)
         provider = await repo.get_provider(db_id)
         if provider is None:
-            raise ValueError(f"自定义供应商 {provider_name} 不存在")
+            raise ValueError(f"Custom provider {provider_name} does not exist")
         if model_id:
-            # 校验 model_id 仍存在且已启用，否则回退到默认模型
+            # Validate that model_id still exists and is enabled; otherwise fall back to the default model.
             from sqlalchemy import select
 
             from lib.db.models.custom_provider import CustomProviderModel
@@ -108,7 +108,7 @@ async def _create_custom_backend(provider_name: str, model_id: str | None, media
             )
             result = await session.execute(stmt)
             if result.scalar_one_or_none() is None:
-                logger.warning("自定义模型 %s/%s 已不存在或已禁用，回退到默认模型", provider_name, model_id)
+                logger.warning("Custom model %s/%s no longer exists or is disabled; falling back to the default model", provider_name, model_id)
                 model_id = None
 
         if not model_id:
@@ -116,7 +116,7 @@ async def _create_custom_backend(provider_name: str, model_id: str | None, media
             if default_model:
                 model_id = default_model.model_id
             else:
-                raise ValueError(f"自定义供应商 {provider_name} 没有默认 {media_type} 模型")
+                raise ValueError(f"Custom provider {provider_name} has no default {media_type} model")
         return create_custom_backend(provider=provider, model_id=model_id, media_type=media_type)
 
 
@@ -126,12 +126,13 @@ async def _get_or_create_video_backend(
     resolver: ConfigResolver,
     *,
     default_video_model: str | None = None,
-):
-    """获取或创建 VideoBackend 实例（带缓存）。
+): 
+    """Get or create a cached VideoBackend instance.
 
-    provider_name 可以是旧格式（gemini/seedance/grok）或新格式（gemini-aistudio/gemini-vertex）。
-    通过 resolver 按需加载供应商配置。
-    default_video_model: 全局默认视频模型，当 provider_settings 中无 model 时作为 fallback。
+    provider_name may use a legacy name (gemini/seedance/grok) or a new
+    provider id (gemini-aistudio/gemini-vertex). Provider configuration is
+    loaded on demand through the resolver.
+    default_video_model acts as the fallback when provider_settings has no model.
     """
     from lib.video_backends import create_backend
 
@@ -140,18 +141,18 @@ async def _get_or_create_video_backend(
     if cache_key in _backend_cache:
         return _backend_cache[cache_key]
 
-    # 自定义供应商走独立工厂路径
+    # Custom providers use a separate factory path.
     if is_custom_provider(provider_name):
         backend = await _create_custom_backend(provider_name, effective_model, "video")
         _backend_cache[cache_key] = backend
         return backend
 
-    # 解析 provider_id → backend registry name
+    # Resolve provider_id -> backend registry name.
     backend_name = _PROVIDER_ID_TO_BACKEND.get(provider_name, provider_name)
 
     kwargs: dict = {}
     if backend_name == PROVIDER_GEMINI:
-        # 确定 backend_type（aistudio 或 vertex）
+        # Determine the backend_type (aistudio or vertex).
         if provider_name == "gemini-vertex":
             kwargs["backend_type"] = "vertex"
         elif provider_name == "gemini-aistudio":
@@ -178,7 +179,7 @@ async def _fill_simple_provider_kwargs(
     kwargs: dict,
     effective_model: str | None,
 ) -> None:
-    """Ark/Grok/OpenAI 等简单供应商的通用配置填充。"""
+    """Fill common configuration for simple providers such as Ark, Grok, and OpenAI."""
     db_config = await resolver.provider_config(backend_name)
     kwargs["api_key"] = db_config.get("api_key")
     kwargs["model"] = effective_model
@@ -193,7 +194,7 @@ async def _get_or_create_image_backend(
     *,
     default_image_model: str | None = None,
 ):
-    """获取或创建 ImageBackend 实例（带缓存）。"""
+    """Get or create a cached ImageBackend instance."""
     from lib.image_backends import create_backend
 
     effective_model = provider_settings.get("model") or default_image_model or None
@@ -201,7 +202,7 @@ async def _get_or_create_image_backend(
     if cache_key in _backend_cache:
         return _backend_cache[cache_key]
 
-    # 自定义供应商走独立工厂路径
+    # Custom providers use a separate factory path.
     if is_custom_provider(provider_name):
         backend = await _create_custom_backend(provider_name, effective_model, "image")
         _backend_cache[cache_key] = backend
@@ -234,21 +235,21 @@ async def _resolve_video_backend(
     resolver: ConfigResolver,
     payload: dict | None,
 ) -> tuple[Any | None, str, str]:
-    """解析视频后端，返回 (video_backend, video_backend_type, video_model)。
+    """Resolve the video backend and return ``(video_backend, video_backend_type, video_model)``.
 
-    仅在 payload 存在时创建 VideoBackend，避免图片任务因视频配置缺失而报错。
-    注意：video_backend_type 仅在 video_backend 为 None（回退到 GeminiClient）时生效，
-    因此只需要在全局默认回退分支中设置。
+    Only create a VideoBackend when a payload exists so image-only tasks do not fail
+    because of missing video configuration. ``video_backend_type`` matters only when
+    ``video_backend`` is ``None`` and the flow falls back to GeminiClient.
     """
     default_video_provider_id, video_model = await resolver.default_video_backend()
     video_backend = None
     video_backend_type = "aistudio"
 
     if payload:
-        # provider 统一从项目配置 → 全局默认解析，调用方无需传递
+        # Resolve provider settings from project config first, then fall back to global defaults.
         project = await asyncio.to_thread(get_project_manager().load_project, project_name)
 
-        # 从 project.json 的 video_backend（"provider/model" 格式）解析
+        # Parse the project.json video_backend value in provider/model format.
         provider_name, project_model = _parse_project_backend(project.get("video_backend"))
 
         if not provider_name:
@@ -275,28 +276,28 @@ async def get_media_generator(
     user_id: str = DEFAULT_USER_ID,
     require_image_backend: bool = True,
 ) -> MediaGenerator:
-    """创建 MediaGenerator。仅按调用场景初始化所需的 backend。"""
+    """Create a MediaGenerator and initialize only the backends needed for the current call path."""
     from lib.config.resolver import ConfigResolver
     from lib.db import async_session_factory
 
     project_path = await asyncio.to_thread(get_project_manager().get_project_path, project_name)
     resolver = ConfigResolver(async_session_factory)
 
-    # 初始化阶段共享单一 session
+    # Share a single resolver session during initialization.
     async with resolver.session() as r:
         image_backend = None
         if require_image_backend:
             image_provider_id, image_model = await r.default_image_backend()
-            # payload 中的 image_provider（由入队时 _snapshot_image_backend 注入）
+            # image_provider can be injected into the payload when the task is queued.
             if payload and payload.get("image_provider"):
                 image_provider_id = payload["image_provider"]
                 image_model = payload.get("image_model", "") or image_model
             else:
-                # 直接从 project.json 的 image_backend（"provider/model" 格式）读取
+                # Otherwise read the image_backend value directly from project.json.
                 project = await asyncio.to_thread(get_project_manager().load_project, project_name)
                 proj_provider, proj_model = _parse_project_backend(project.get("image_backend"))
                 if proj_provider:
-                    # 仅当 provider 相同时才复用全局默认 model，避免跨 provider model 不匹配
+                    # Reuse the global default model only when the provider matches.
                     image_model = proj_model or (image_model if proj_provider == image_provider_id else None)
                     image_provider_id = proj_provider
             image_backend = await _get_or_create_image_backend(
@@ -306,14 +307,14 @@ async def get_media_generator(
                 default_image_model=image_model,
             )
 
-        # 解析 video backend（保持现有逻辑）
+        # Resolve the video backend using the existing logic.
         video_backend, _, _ = await _resolve_video_backend(
             project_name,
             r,
             payload,
         )
 
-    # 传原始 resolver 给 MediaGenerator（后续调用在 session scope 外）
+    # Pass the resolver itself to MediaGenerator for later calls outside the session scope.
     return MediaGenerator(
         project_path,
         rate_limiter=rate_limiter,
@@ -329,7 +330,7 @@ def get_aspect_ratio(project: dict, resource_type: str) -> str:
         return "3:4"
     if resource_type == "clues":
         return "16:9"
-    # 优先读顶层字段；缺失时按 content_mode 推导（向后兼容）
+    # Prefer the top-level field and fall back to content_mode for backwards compatibility.
     val = project.get("aspect_ratio")
     if isinstance(val, str):
         return val
@@ -403,13 +404,13 @@ def _normalize_video_prompt(prompt: str | dict) -> str:
 
 
 def _get_model_default_duration(provider_name: str, model_name: str | None) -> int:
-    """从 PROVIDER_REGISTRY 查找模型的 supported_durations[0]，找不到则 fallback 4。"""
+    """Read supported_durations[0] from PROVIDER_REGISTRY and fall back to 4 seconds."""
     provider_meta = PROVIDER_REGISTRY.get(provider_name)
     if provider_meta and model_name:
         model_info = provider_meta.models.get(model_name)
         if model_info and model_info.supported_durations:
             return model_info.supported_durations[0]
-    # 自定义供应商或 registry 中无此模型时 fallback
+    # Fall back when this is a custom provider or the model is missing from the registry.
     return 4
 
 
@@ -469,7 +470,7 @@ def _resolve_script_episode(project_name: str, script_file: str | None) -> int |
 
 
 def _compute_affected_fingerprints(project_name: str, task_type: str, resource_id: str) -> dict[str, int]:
-    """计算受影响文件的 mtime 指纹"""
+    """Compute mtime fingerprints for the files affected by a task."""
     try:
         project_path = get_project_manager().get_project_path(project_name)
     except Exception:
@@ -522,10 +523,10 @@ def _compute_affected_fingerprints(project_name: str, task_type: str, resource_i
 
 # (entity_type, action, label_tpl, include_script_episode)
 _TASK_CHANGE_SPECS: dict[str, tuple] = {
-    "storyboard": ("segment", "storyboard_ready", "分镜「{}」", True),
-    "video": ("segment", "video_ready", "分镜「{}」", True),
-    "character": ("character", "updated", "角色「{}」设计图", False),
-    "clue": ("clue", "updated", "线索「{}」设计图", False),
+    "storyboard": ("segment", "storyboard_ready", 'Storyboard "{}"', True),
+    "video": ("segment", "video_ready", 'Video "{}"', True),
+    "character": ("character", "updated", 'Character "{}" Design', False),
+    "clue": ("clue", "updated", 'Clue "{}" Design', False),
 }
 
 
@@ -561,7 +562,7 @@ def _emit_generation_success_batch(
         emit_project_change_batch(project_name, [change], source="worker")
     except Exception:
         logger.exception(
-            "发送生成完成项目事件失败 project=%s task_type=%s resource_id=%s",
+            "Failed to emit generation-complete project event project=%s task_type=%s resource_id=%s",
             project_name,
             task_type,
             resource_id,
@@ -668,12 +669,12 @@ async def execute_video_task(
     seed = payload.get("seed")
     service_tier = payload.get("video_provider_settings", {}).get("service_tier", "default")
 
-    # 解析 provider / model，供 duration fallback 和分辨率查找共用
+    # Resolve provider/model values for both duration fallback and resolution lookup.
     provider_settings = payload.get("video_provider_settings", {})
     model_name = provider_settings.get("model")
-    # payload 中 video_provider 由任务入队时设置；project 中存的是 video_backend（"provider/model" 格式）
+    # video_provider may be injected into the payload when the task is queued; project config stores video_backend as provider/model.
     provider_name = payload.get("video_provider")
-    registry_provider_id = provider_name  # 用于 PROVIDER_REGISTRY 查找的原始 provider_id
+    registry_provider_id = provider_name  # Original provider_id used for PROVIDER_REGISTRY lookups.
     if not provider_name:
         video_backend = project.get("video_backend") or ""
         if "/" in video_backend:
@@ -691,7 +692,7 @@ async def execute_video_task(
         registry_provider_id = default_provider_id
         model_name = model_name or default_model_id
         provider_name = _PROVIDER_ID_TO_BACKEND.get(default_provider_id, default_provider_id)
-    # 将新 provider_id 映射为旧名称以查找分辨率
+    # Map the new provider_id to the legacy name when looking up resolutions.
     resolution_key = _PROVIDER_ID_TO_BACKEND.get(provider_name, provider_name)
     video_model_settings = project.get("video_model_settings", {})
     model_settings = video_model_settings.get(model_name, {}) if model_name else {}
@@ -733,7 +734,7 @@ async def execute_video_task(
 
     await asyncio.to_thread(_update_video_metadata)
 
-    # 提取视频首帧作为缩略图
+    # Extract the first video frame as the thumbnail.
     video_file = project_path / f"videos/scene_{resource_id}.mp4"
     thumbnail_file = project_path / f"thumbnails/scene_{resource_id}.jpg"
     if await extract_video_thumbnail(video_file, thumbnail_file):

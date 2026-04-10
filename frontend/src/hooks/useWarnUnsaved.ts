@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
 /**
- * 当有未保存更改时，阻止用户关闭/刷新标签页。
+ * Prevent the user from closing or refreshing the tab while there are unsaved changes.
  */
 export function useWarnUnsaved(isDirty: boolean) {
   useEffect(() => {

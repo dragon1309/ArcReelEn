@@ -39,7 +39,7 @@ from server.services.project_archive import (
 
 router = APIRouter()
 
-# 初始化项目管理器和状态计算器
+# Initialize the project manager and status calculator.
 pm = ProjectManager(PROJECT_ROOT / "projects")
 calc = StatusCalculator(pm)
 
@@ -193,7 +193,7 @@ async def export_project_archive(
     if scope not in ("full", "current"):
         raise HTTPException(status_code=422, detail="scope must be full or current")
 
-    # 验证 download_token
+    # Validate the download token.
     import jwt as pyjwt
 
     try:
@@ -224,7 +224,7 @@ async def export_project_archive(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# --- 剪映草稿导出 ---
+# --- Jianying draft export ---
 
 
 def get_jianying_draft_service() -> JianyingDraftService:
@@ -255,7 +255,7 @@ def export_jianying_draft(
     """Export the Jianying draft ZIP for the specified episode."""
     import jwt as pyjwt
 
-    # 1. 验证 download_token
+    # 1. Validate the download token.
     try:
         verify_download_token(download_token, name)
     except pyjwt.ExpiredSignatureError:
@@ -265,10 +265,10 @@ def export_jianying_draft(
     except pyjwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid download token")
 
-    # 2. 校验 draft_path
+    # 2. Validate the draft_path.
     draft_path = _validate_draft_path(draft_path)
 
-    # 3. 调用服务
+    # 3. Call the export service.
     svc = get_jianying_draft_service()
     try:
         zip_path = svc.export_episode_draft(
@@ -305,10 +305,10 @@ async def list_projects(_user: CurrentUser):
         projects = []
         for name in manager.list_projects():
             try:
-                # 尝试加载项目元数据
+                # Try to load project metadata.
                 if manager.project_exists(name):
                     project = manager.load_project(name)
-                    # 获取缩略图（第一个分镜图）
+                    # Get the thumbnail from the first storyboard image.
                     project_dir = manager.get_project_path(name)
                     storyboards_dir = project_dir / "storyboards"
                     thumbnail = None
@@ -317,7 +317,7 @@ async def list_projects(_user: CurrentUser):
                         if scene_images:
                             thumbnail = f"/api/v1/files/{name}/storyboards/{scene_images[0].name}"
 
-                    # 使用 StatusCalculator 计算进度（读时计算）
+                    # Compute progress with StatusCalculator at read time.
                     status = calculator.calculate_project_status(name, project)
 
                     projects.append(
@@ -330,7 +330,7 @@ async def list_projects(_user: CurrentUser):
                         }
                     )
                 else:
-                    # 没有 project.json 的项目
+                    # Project without project.json.
                     projects.append(
                         {
                             "name": name,
@@ -341,7 +341,7 @@ async def list_projects(_user: CurrentUser):
                         }
                     )
             except Exception as e:
-                # 出错时返回基本信息
+                # Fall back to basic project info if loading fails.
                 logger.warning("Failed to load project '%s' metadata: %s", name, e)
                 projects.append(
                     {"name": name, "title": name, "style": "", "thumbnail": None, "status": {}, "error": str(e)}
@@ -403,10 +403,10 @@ async def get_project(name: str, _user: CurrentUser):
 
             project = manager.load_project(name)
 
-            # 注入计算字段（不写入 JSON，仅用于 API 响应）
+            # Inject computed fields for the API response without writing them back to JSON.
             project = calculator.enrich_project(name, project)
 
-            # 加载所有剧本并注入计算字段
+            # Load all scripts and inject computed fields.
             scripts = {}
             for ep in project.get("episodes", []):
                 script_file = ep.get("script_file", "")
@@ -423,7 +423,7 @@ async def get_project(name: str, _user: CurrentUser):
                     except FileNotFoundError:
                         logger.debug("Script file missing, skipping: %s/%s", name, script_file)
 
-            # 计算媒体文件指纹（用于前端内容寻址缓存）
+            # Compute asset fingerprints for frontend content-addressed caching.
             project_path = manager.get_project_path(name)
             fingerprints = compute_asset_fingerprints(project_path)
 
@@ -554,12 +554,12 @@ async def update_scene(name: str, scene_id: str, req: UpdateSceneRequest, _user:
             manager = get_project_manager()
             script = manager.load_script(name, req.script_file)
 
-            # 找到并更新场景
+            # Find and update the scene.
             scene_found = False
             for scene in script.get("scenes", []):
                 if scene.get("scene_id") == scene_id:
                     scene_found = True
-                    # 更新允许的字段
+                    # Update only the allowed fields.
                     for key, value in req.updates.items():
                         if key in [
                             "duration_seconds",
@@ -618,11 +618,11 @@ async def update_segment(name: str, segment_id: str, req: UpdateSegmentRequest, 
             manager = get_project_manager()
             script = manager.load_script(name, req.script_file)
 
-            # 检查是否为说书模式
+            # Ensure the script is in narration mode.
             if script.get("content_mode") != "narration" and "segments" not in script:
                 raise HTTPException(status_code=400, detail="This script is not in narration mode. Use the scene update endpoint instead")
 
-            # 找到并更新片段
+            # Find and update the segment.
             segment_found = False
             for segment in script.get("segments", []):
                 if segment.get("segment_id") == segment_id:
@@ -658,7 +658,7 @@ async def update_segment(name: str, segment_id: str, req: UpdateSegmentRequest, 
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==================== 源文件管理 ====================
+# ==================== Source file management ====================
 
 
 @router.post("/projects/{name}/source")
@@ -688,7 +688,7 @@ async def set_project_source(
     try:
         manager = get_project_manager()
 
-        # 异步读取上传文件
+        # Read the uploaded file asynchronously.
         raw: bytes | None = None
         if file:
             original_name = file.filename or "novel.txt"
@@ -699,7 +699,7 @@ async def set_project_source(
                 raise HTTPException(status_code=400, detail=f"File size exceeds the limit (about {MAX_CHARS} characters max)")
             raw = await file.read()
 
-        # 同步文件 I/O 在线程中执行
+        # Run synchronous file I/O in a worker thread.
         def _sync_write():
             if not manager.project_exists(name):
                 raise HTTPException(status_code=404, detail=f"Project '{name}' does not exist")
@@ -752,7 +752,7 @@ async def set_project_source(
             await file.close()
 
 
-# ==================== 项目概述管理 ====================
+# ==================== Project overview management ====================
 
 
 @router.post("/projects/{name}/generate-overview")

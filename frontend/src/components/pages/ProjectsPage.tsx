@@ -192,7 +192,7 @@ function ProjectCard({ project }: { project: ProjectSummary }) {
         <h3 className="font-semibold text-gray-100 truncate">{project.title}</h3>
         <p className="text-xs text-gray-500 mt-0.5">
           {project.style || "No style set"}
-          {phaseLabel ? ` · ${phaseLabel}` : ""}
+          {phaseLabel ? ` - ${phaseLabel}` : ""}
         </p>
       </div>
 
@@ -226,9 +226,9 @@ function ProjectCard({ project }: { project: ProjectSummary }) {
       {summary && summary.total > 0 && (
         <div className="text-xs text-gray-500">
           {summary.total} episode{summary.total === 1 ? "" : "s"}
-          {summary.scripted > 0 && ` · ${summary.scripted} scripted`}
-          {summary.in_production > 0 && ` · ${summary.in_production} in production`}
-          {summary.completed > 0 && ` · ${summary.completed} completed`}
+          {summary.scripted > 0 && ` - ${summary.scripted} scripted`}
+          {summary.in_production > 0 && ` - ${summary.in_production} in production`}
+          {summary.completed > 0 && ` - ${summary.completed} completed`}
         </div>
       )}
     </button>

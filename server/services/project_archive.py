@@ -324,7 +324,8 @@ class ProjectArchiveService:
         diagnostics = self._repair_project_tree(snapshot_dir)
         diagnostics.extend_validation(self.validator.validate_project_tree(snapshot_dir))
 
-        # 从源目录收集非标准顶层条目，记录到诊断中（即使已被过滤不导出）
+        # Collect non-standard top-level entries from the source directory and record them in diagnostics
+        # even if they are filtered out of the export.
         excluded_entries = self._collect_pass_through_entries(source_dir)
         for entry in excluded_entries:
             diagnostics.add(
@@ -655,7 +656,7 @@ class ProjectArchiveService:
                 location=f"{script_path_rel}:novel.source_file",
             )
 
-        # 剥离废弃的 episode 级聚合字段
+        # Strip deprecated episode-level aggregate fields.
         for deprecated_field in ("characters_in_episode", "clues_in_episode"):
             if deprecated_field in script_payload:
                 script_payload.pop(deprecated_field)

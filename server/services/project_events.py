@@ -192,7 +192,7 @@ class ProjectEventService:
 
         channel.scan_now.clear()
 
-        # 文件 I/O 下沉到线程池，状态更新和广播留在事件循环
+        # Offload file I/O to a worker thread and keep state updates/broadcasts on the event loop.
         task = asyncio.create_task(
             self._async_rebuild_and_broadcast(project_name, channel, source, changes),
             name=f"batch-rebuild-{project_name}",
@@ -214,7 +214,7 @@ class ProjectEventService:
             logger.exception("Failed to build explicit project event snapshot project=%s", project_name)
             return
 
-        # 以下在事件循环线程中执行，线程安全
+        # The remaining work runs on the event-loop thread and is thread-safe.
         channel.snapshot = snapshot
         channel.fingerprint = fingerprint
         channel.pending_sources.clear()
@@ -239,9 +239,9 @@ class ProjectEventService:
         try:
             while channel.subscribers:
                 try:
-                    # 仅文件 I/O 在线程中执行
+                    # Only file I/O runs in the worker thread.
                     snapshot, fingerprint = await asyncio.to_thread(self._rebuild_snapshot, project_name)
-                    # 状态更新和广播在事件循环线程中执行（线程安全）
+                    # State updates and broadcasts run on the event-loop thread (thread-safe).
                     self._apply_scan_result(project_name, channel, snapshot, fingerprint)
                 except asyncio.CancelledError:
                     raise

@@ -359,7 +359,7 @@ function ApiKeyRow({ keyInfo, onDelete }: ApiKeyRowProps) {
           <span
             className={`text-xs ${expired ? "font-medium text-rose-400" : "text-gray-400"}`}
           >
-            {expired ? "Expired · " : ""}
+            {expired ? "Expired - " : ""}
             {formatDate(keyInfo.expires_at)}
           </span>
         ) : (

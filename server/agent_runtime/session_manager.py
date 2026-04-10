@@ -75,12 +75,12 @@ class PendingQuestion:
 class ManagedSession:
     """A managed ClaudeSDKClient session."""
 
-    session_id: str  # sdk_session_id（已有会话）或临时 UUID（新会话等待中）
+    session_id: str  # sdk_session_id for an existing session, or a temporary UUID while a new session is pending.
     client: Any  # ClaudeSDKClient
     status: SessionStatus = "idle"
     project_name: str = ""  # Used by _register_new_session
     sdk_id_event: asyncio.Event = field(default_factory=asyncio.Event)
-    resolved_sdk_id: str | None = None  # consumer 设置，send_new_session 读取
+    resolved_sdk_id: str | None = None  # Set by the consumer and read by send_new_session.
     message_buffer: list[dict[str, Any]] = field(default_factory=list)
     subscribers: set[asyncio.Queue] = field(default_factory=set)
     consumer_task: asyncio.Task | None = None
@@ -933,20 +933,20 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
             await self._ensure_capacity()
             options = self._build_options(
                 meta.project_name,
-                meta.id,  # SessionMeta.id 就是 sdk_session_id
+                meta.id,  # SessionMeta.id already stores the sdk_session_id.
                 can_use_tool=await self._build_can_use_tool_callback(session_id),
             )
             client = ClaudeSDKClient(options=options)
             await client.connect()
 
             managed = ManagedSession(
-                session_id=meta.id,  # 现在就是 sdk_session_id
+                session_id=meta.id,  # This is the sdk_session_id.
                 client=client,
                 status=meta.status if meta.status != "idle" else "idle",
                 project_name=meta.project_name,
-                resolved_sdk_id=meta.id,  # 标记为已注册，防止重复创建 DB 记录
+                resolved_sdk_id=meta.id,  # Mark as registered to avoid duplicate DB records.
             )
-            managed.sdk_id_event.set()  # 已有会话不需要等待
+            managed.sdk_id_event.set()  # Existing sessions do not need to wait.
             self.sessions[session_id] = managed
             return managed
 
@@ -962,7 +962,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
         """Send a message and start background consumer."""
         managed = await self.get_or_connect(session_id, meta=meta)
         managed.last_activity = time.monotonic()
-        # 取消待执行的 cleanup（会话恢复活跃）
+        # Cancel any scheduled cleanup now that the session is active again.
         if managed._cleanup_task and not managed._cleanup_task.done():
             managed._cleanup_task.cancel()
             managed._cleanup_task = None
@@ -1138,7 +1138,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
         managed = self.sessions.get(session_id)
         if managed is None:
             return
-        # 取消旧的 cleanup task
+        # Cancel the previous cleanup task.
         if managed._cleanup_task and not managed._cleanup_task.done():
             managed._cleanup_task.cancel()
 
@@ -1148,11 +1148,11 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
             m = self.sessions.get(session_id)
             if m is None:
                 return
-            # 会话已恢复活跃 → 跳过
+            # The session became active again; skip cleanup.
             if m.status == "running":
                 return
             logger.info("Cleaning up session session_id=%s status=%s", session_id, m.status)
-            # 清除自身引用，避免 _disconnect_session 尝试 cancel/gather 当前任务
+            # Clear the self-reference so _disconnect_session does not cancel/gather this task.
             m._cleanup_task = None
             try:
                 await self._disconnect_session(session_id, reason="cleanup timer")
@@ -1448,7 +1448,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
         if len(active) < max_concurrent:
             return
 
-        # 可淘汰的会话：非 running 状态（idle / completed / error / interrupted）
+        # Evictable sessions are those not currently running.
         evictable = sorted(
             [s for s in active if s.status != "running"],
             key=lambda s: s.last_activity or 0,
@@ -1475,10 +1475,10 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
                 raise SessionCapacityError("There are idle sessions that could not be closed, so no concurrency slot can be freed right now. Please try again later") from exc
             return
 
-        # 所有会话都在 running → 拒绝
+        # All sessions are running, so reject the request.
         raise SessionCapacityError(f"There are currently {len(active)} active sessions, which is the maximum limit. Please try again later")
 
-    _PATROL_INTERVAL = 300  # 5 分钟
+    _PATROL_INTERVAL = 300  # 5 minutes
 
     async def _patrol_once(self) -> None:
         """Run one patrol pass and clean up timed-out non-running sessions."""
@@ -1962,7 +1962,7 @@ You are the ArcReel Agent, a professional AI video-creation assistant. Your job 
 
     async def shutdown_gracefully(self, timeout: float = 30.0) -> None:
         """Gracefully shutdown all sessions."""
-        # 取消巡检任务
+        # Cancel the patrol task.
         patrol = getattr(self, "_patrol_task", None)
         if patrol and not patrol.done():
             patrol.cancel()

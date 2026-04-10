@@ -18,9 +18,9 @@ class StoryboardTaskPlan:
     dependency_index: int
 
 
-PREVIOUS_STORYBOARD_REFERENCE_LABEL = "上一分镜图（镜头衔接参考）"
+PREVIOUS_STORYBOARD_REFERENCE_LABEL = "Previous Storyboard (continuity reference)"
 PREVIOUS_STORYBOARD_REFERENCE_DESCRIPTION = (
-    "仅用于延续前一镜头的构图、色调和场景连续性，不是新增角色、服装或道具设定；请以当前 prompt 为准生成当前镜头。"
+    "Use this only to continue the composition, color palette, and scene continuity from the previous shot. It is not new character, costume, or prop reference. Follow the current prompt when generating this shot."
 )
 
 

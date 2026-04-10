@@ -289,7 +289,7 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
             {projectData.content_mode === "narration"
               ? "Narration + Visuals Mode"
               : "Episode Animation Mode"}{" "}
-            · {projectData.style || "No style set"}
+            - {projectData.style || "No style set"}
           </p>
         </div>
 
@@ -440,7 +440,7 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
                       </span>
                       <span className="text-sm text-gray-200">{ep.title}</span>
                       <span className="text-xs text-gray-500">
-                        {ep.scenes_count ?? "?"} segments · {ep.status ?? "draft"}
+                        {ep.scenes_count ?? "?"} segments - {ep.status ?? "draft"}
                       </span>
                       {epCost && (
                         <span className="ml-auto flex min-w-0 flex-shrink flex-wrap gap-4 text-xs text-gray-400">

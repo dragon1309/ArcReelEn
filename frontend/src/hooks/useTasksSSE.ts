@@ -5,11 +5,11 @@ import { useTasksStore } from "@/stores/tasks-store";
 const POLL_INTERVAL_MS = 3000;
 
 /**
- * 轮询任务队列状态的 Hook。
- * 挂载时立即拉取一次，之后每 3 秒轮询，卸载时清理。
+ * Poll the task queue state.
+ * Fetch once on mount, then poll every 3 seconds until unmount.
  *
- * 替代原先的 EventSource SSE 长连接，释放浏览器连接槽位
- * （Chrome HTTP/1.1 同域名 6 连接限制）。
+ * This replaces the old EventSource SSE connection to free browser connection slots
+ * (Chrome HTTP/1.1 allows only 6 concurrent connections per origin).
  */
 export function useTasksSSE(projectName?: string | null): void {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);

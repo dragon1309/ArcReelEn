@@ -1,6 +1,4 @@
-"""
-角色管理路由
-"""
+"""Character management routes."""
 
 import asyncio
 import logging
@@ -17,7 +15,7 @@ from server.auth import CurrentUser
 
 router = APIRouter()
 
-# 初始化项目管理器
+# Shared project manager instance.
 pm = ProjectManager(PROJECT_ROOT / "projects")
 
 
@@ -40,7 +38,7 @@ class UpdateCharacterRequest(BaseModel):
 
 @router.post("/projects/{project_name}/characters")
 async def add_character(project_name: str, req: CreateCharacterRequest, _user: CurrentUser):
-    """添加角色"""
+    """Add a character."""
     try:
 
         def _sync():
@@ -52,11 +50,11 @@ async def add_character(project_name: str, req: CreateCharacterRequest, _user: C
 
         return await asyncio.to_thread(_sync)
     except FileNotFoundError:
-        raise HTTPException(status_code=404, detail=f"项目 '{project_name}' 不存在")
+        raise HTTPException(status_code=404, detail=f"Project '{project_name}' does not exist")
     except HTTPException:
         raise
     except Exception as e:
-        logger.exception("请求处理失败")
+        logger.exception("Request handling failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -67,7 +65,7 @@ async def update_character(
     req: UpdateCharacterRequest,
     _user: CurrentUser,
 ):
-    """更新角色"""
+    """Update a character."""
     try:
 
         def _sync():
@@ -94,19 +92,19 @@ async def update_character(
 
         return await asyncio.to_thread(_sync)
     except KeyError:
-        raise HTTPException(status_code=404, detail=f"角色 '{char_name}' 不存在")
+        raise HTTPException(status_code=404, detail=f"Character '{char_name}' does not exist")
     except FileNotFoundError:
-        raise HTTPException(status_code=404, detail=f"项目 '{project_name}' 不存在")
+        raise HTTPException(status_code=404, detail=f"Project '{project_name}' does not exist")
     except HTTPException:
         raise
     except Exception as e:
-        logger.exception("请求处理失败")
+        logger.exception("Request handling failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.delete("/projects/{project_name}/characters/{char_name}")
 async def delete_character(project_name: str, char_name: str, _user: CurrentUser):
-    """删除角色"""
+    """Delete a character."""
     try:
 
         def _sync():
@@ -119,15 +117,15 @@ async def delete_character(project_name: str, char_name: str, _user: CurrentUser
 
             with project_change_source("webui"):
                 manager.update_project(project_name, _mutate)
-            return {"success": True, "message": f"角色 '{char_name}' 已删除"}
+            return {"success": True, "message": f"Character '{char_name}' deleted"}
 
         return await asyncio.to_thread(_sync)
     except KeyError:
-        raise HTTPException(status_code=404, detail=f"角色 '{char_name}' 不存在")
+        raise HTTPException(status_code=404, detail=f"Character '{char_name}' does not exist")
     except FileNotFoundError:
-        raise HTTPException(status_code=404, detail=f"项目 '{project_name}' 不存在")
+        raise HTTPException(status_code=404, detail=f"Project '{project_name}' does not exist")
     except HTTPException:
         raise
     except Exception as e:
-        logger.exception("请求处理失败")
+        logger.exception("Request handling failed")
         raise HTTPException(status_code=500, detail=str(e))
